@@ -175,6 +175,12 @@
         <menus-bubble-assistant />
         <div class="umo-bubble-menu-divider"></div>
       </template>
+      <slot
+        name="paragraph_left_menu"
+        :node-type="getCurrentNode('name')"
+        :node-attrs="getCurrentNode('attrs')"
+      />
+      <div class="umo-bubble-menu-divider"></div>
       <menus-toolbar-base-font-size :select="false" />
       <div
         v-if="

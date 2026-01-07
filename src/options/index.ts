@@ -35,6 +35,7 @@ const defaultOptions: UmoEditorOptions = {
   dicts: defaultDicts,
   toolbar: {
     showSaveLabel: true,
+    showToggleToolbar: true,
     defaultMode: 'ribbon',
     menus: ['base', 'insert', 'table', 'tools', 'page', 'export'],
   },
@@ -352,6 +353,11 @@ const ojbectSchema = new ObjectSchema({
     validate: 'object',
     schema: {
       showSaveLabel: {
+        merge: 'replace',
+        validate: 'boolean',
+        required: false,
+      },
+      showToggleToolbar: {
         merge: 'replace',
         validate: 'boolean',
         required: false,

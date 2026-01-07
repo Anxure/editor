@@ -66,6 +66,7 @@ export type ToolbarMenu =
 
 export interface ToolbarOptions {
   showSaveLabel?: boolean
+  showToggleToolbar?: boolean
   defaultMode?: 'classic' | 'ribbon'
   menus?: ToolbarMenu[]
 }

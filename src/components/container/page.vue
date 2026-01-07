@@ -54,6 +54,9 @@
               <template #bubble_menu="props">
                 <slot name="bubble_menu" v-bind="props" />
               </template>
+              <template #paragraph_left_menu="props">
+                <slot name="paragraph_left_menu" v-bind="props" />
+              </template>
             </editor>
           </div>
           <div class="umo-page-node-footer" contenteditable="false">

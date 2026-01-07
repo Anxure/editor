@@ -9,7 +9,6 @@ import dts from 'vite-plugin-dts'
 import { createSvgIconsPlugin } from 'vite-plugin-svg-icons'
 import tsConfigPaths from 'vite-tsconfig-paths'
 
-import pkg from './package.json'
 import copyright from './src/utils/copyright'
 
 // Plugin configurations
@@ -38,14 +37,15 @@ const vuePlugins = {
   }),
 }
 
-// Build configuration - 原始按依赖拆分的库构建
-const buildConfig = {
-  target: 'es2018',
+// Full-bundle build configuration - 尽量减少外部依赖，但对体积较大的三方库做 external 以控制 bundle 体积
+const buildConfig: import('vite').BuildOptions = {
+  target: 'esnext',
   lib: {
     entry: `${process.cwd()}/src/components/index.ts`,
-    name: pkg.name,
+    // UMD / IIFE 全局变量名：window.UmoEditor
+    name: 'UmoEditor',
     fileName: 'umo-editor',
-  },
+  } as import('vite').LibraryOptions,
   outDir: 'dist',
   copyPublicDir: false,
   minify: 'esbuild' as const,
@@ -53,22 +53,13 @@ const buildConfig = {
   rollupOptions: {
     output: [
       {
+        format: 'es' as const,
         banner: copyright,
         intro: `import './style.css'`,
-        format: 'es' as const,
       },
     ],
-    external: [
-      'vue',
-      ...Object.keys(pkg.dependencies ?? {}),
-      /^@vueuse\/.*/,
-      /^@tiptap\/.*/,
-      /^nzh\/.*/,
-    ],
-    onwarn(warning: any, warn: (warning: any) => void) {
-      if (warning.code === 'UNUSED_EXTERNAL_IMPORT') return
-      warn(warning)
-    },
+    // vue 必须 external；同时将体积较大的依赖 external，避免 full bundle 过大
+    external: ['vue'],
   },
 }
 
@@ -77,7 +68,6 @@ const cssConfig = {
     less: {
       modifyVars: { '@prefix': 'umo' },
       javascriptEnabled: true,
-      // 添加 Less 插件来排除特定类名
       plugins: [
         {
           install(less: any, pluginManager: any) {
@@ -135,6 +125,7 @@ export default defineConfig({
   build: buildConfig,
   esbuild: {
     drop: ['debugger'],
+    target: 'esnext',
   },
   resolve: {
     alias: {

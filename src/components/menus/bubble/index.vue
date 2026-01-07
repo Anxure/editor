@@ -11,6 +11,9 @@
       <template #bubble_menu="props">
         <slot name="bubble_menu" v-bind="props" />
       </template>
+      <template #paragraph_left_menu="props">
+        <slot name="paragraph_left_menu" v-bind="props" />
+      </template>
     </menus-bubble-menus>
     <ai-assistant-input v-if="options?.ai?.assistant?.enabled && assistant" />
   </bubble-menu>

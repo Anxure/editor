@@ -1,7 +1,15 @@
 <template>
   <div class="examples">
     <div class="box">
-      <umo-editor ref="editorRef" v-bind="options"></umo-editor>
+      <umo-editor
+        ref="editorRef"
+        v-bind="options"
+        @customSaveContent="handleCustomSaveContent"
+      >
+        <template #paragraph_left_menu="props">
+          <umo-menu-button>1111</umo-menu-button>
+        </template>
+      </umo-editor>
     </div>
     <!-- <div class="box">
       <umo-editor editor-key="testaaa" :toolbar="{ defaultMode: 'classic' }" />
@@ -12,7 +20,7 @@
 <script setup lang="ts">
 import { shortId } from '@/utils/short-id'
 
-const editorRef = $ref(null)
+const editorRef = useTemplateRef('editorRef')
 const templates = [
   {
     title: '工作任务',
@@ -27,8 +35,14 @@ const templates = [
       '<h1>工作周报</h1><h2>本周工作总结</h2><hr /><h3>已完成工作：</h3><ul><li>[任务1名称]：[简要描述任务内容及完成情况]</li><li>[任务2名称]：[简要描述任务内容及完成情况]</li><li>...</li></ul><h3>进行中工作：</h3><ul><li>[任务1名称]：[简要描述任务当前进度和下一步计划]</li><li>[任务2名称]：[简要描述任务当前进度和下一步计划]</li><li>...</li></ul><h3>问题与挑战：</h3><ul><li>[问题1]：[描述遇到的问题及当前解决方案或需要的支持]</li><li>[问题2]：[描述遇到的问题及当前解决方案或需要的支持]</li><li>...</li></ul><hr /><h2>下周工作计划</h2><h3>计划开展工作：</h3><ul><li>[任务1名称]：[简要描述下周计划开始的任务内容]</li><li>[任务2名称]：[简要描述下周计划开始的任务内容]</li><li>...</li></ul><h3>需要支持与资源：</h3><ul><li>[资源1]：[描述需要的资源或支持]</li><li>[资源2]：[描述需要的资源或支持]</li><li>...</li></ul>',
   },
 ]
+console.log('editorRef', editorRef)
+const handleCustomSaveContent = () => {
+  console.log('handleCustomSaveContent')
+  editorRef.value?.saveContentStatus(true)
+}
 const options = $ref({
   toolbar: {
+    showToggleToolbar: false,
     // defaultMode: 'classic',
     // menus: ['base'],
   },

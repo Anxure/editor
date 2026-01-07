@@ -98,6 +98,10 @@
           destroyOnClose: true,
           attach: container,
         }"
+        v-if="
+          options.toolbar.showToggleToolbar &&
+          options.document.readOnly !== true
+        "
         @click="toggleToolbarMode"
       >
         <t-button

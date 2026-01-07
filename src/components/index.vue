@@ -41,6 +41,9 @@
           <template #bubble_menu="slotProps">
             <slot name="bubble_menu" v-bind="slotProps" />
           </template>
+          <template #paragraph_left_menu="props">
+            <slot name="paragraph_left_menu" v-bind="props" />
+          </template>
         </container-page>
       </main>
       <footer class="umo-footer">
@@ -127,6 +130,7 @@ const emits = defineEmits([
   'saved',
   'destroy',
   'menuChange',
+  'customSaveContent',
 ])
 // 撤销重做的记录步骤
 const historyRecords = ref({
@@ -1032,89 +1036,22 @@ const destroy = () => {
   removeAllHotkeys()
   destroyed.value = true
 }
-
+const saveContentStatus = (status = true) => {
+  console.log('saveContentStatus', status)
+  if (status) {
+    const time = useTimestamp({ offset: 0 })
+    savedAt.value = time.value
+    emits('saved')
+  } else {
+    savedAt.value = null
+  }
+}
 // Content Saving Methods
-const saveContent = async (showMessage = true) => {
+const saveContent = () => {
   if (options.value.document?.readOnly) {
     return
   }
-  const saveBack = {
-    status: '', // 可选值：'success' | 'error'  // 状态描述文本（用于前端提示或日志）
-    message: '', // 例如：'保存失败：网络异常'
-    showMessage: true, // 是否展示message
-  }
-  try {
-    useMessage('loading', {
-      attach: container,
-      content: t('save.saving'),
-      placement: 'bottom',
-      closeBtn: true,
-      duration: 0, // 需要手工关闭，不会自动关闭了
-      offset: [0, -20],
-    })
-    const _saveBack = await options.value?.onSave?.(
-      {
-        html: editor.value?.getHTML(),
-        json: editor.value?.getJSON(),
-        text: editor.value?.getText(),
-      },
-      page.value,
-      $document.value,
-    )
-    // 兼容老的保存回调
-    if (typeof _saveBack === 'string') {
-      if (_saveBack) {
-        saveBack.status = 'success'
-        saveBack.message = _saveBack
-      } else {
-        saveBack.status = 'error'
-        saveBack.message = _saveBack
-      }
-    } else {
-      for (const key in _saveBack) {
-        saveBack[key] = _saveBack[key]
-      }
-      // 没有返回这个
-      if (_saveBack['showMessage'] === undefined) {
-        saveBack['showMessage'] = showMessage
-      }
-    }
-    MessagePlugin.closeAll()
-    if (saveBack.status === 'error') {
-      if (saveBack.showMessage) {
-        useMessage('error', {
-          attach: container,
-          content: saveBack.message ?? t('save.failed'),
-          placement: 'bottom',
-          offset: [0, -20],
-        })
-      }
-      return
-    }
-    emits('saved')
-    if (saveBack.showMessage) {
-      useMessage('success', {
-        attach: container,
-        content: saveBack.message ?? t('save.success'),
-        placement: 'bottom',
-        offset: [0, -20],
-      })
-    }
-    const time = useTimestamp({ offset: 0 })
-    savedAt.value = time.value
-  } catch (e: unknown) {
-    MessagePlugin.closeAll()
-    if (saveBack.showMessage) {
-      const error = e as Error
-      useMessage('error', {
-        attach: container,
-        content: error?.message ? error.message : t('save.error'),
-        placement: 'bottom',
-        offset: [0, -20],
-      })
-    }
-    console.error((e as Error).message)
-  }
+  emits('customSaveContent')
 }
 const getAllBookmarks = (): any[] => {
   let bookmarkData: any = []
@@ -1253,6 +1190,7 @@ provide('undoHistory', undoHistory)
 provide('redoHistory', redoHistory)
 // Exposing Methods
 defineExpose({
+  saveContentStatus,
   getOptions: () => options.value as UmoEditorOptions,
   setOptions,
   setToolbar,
