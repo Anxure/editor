@@ -34,6 +34,9 @@
           >
             <slot :name="`toolbar_${item}`" v-bind="slotProps" />
           </template>
+          <template #extended-actions>
+            <slot name="extended-actions" />
+          </template>
         </toolbar>
       </header>
       <main class="umo-main">
@@ -131,6 +134,7 @@ const emits = defineEmits([
   'destroy',
   'menuChange',
   'customSaveContent',
+  'exportWord',
 ])
 // 撤销重做的记录步骤
 const historyRecords = ref({
@@ -157,6 +161,9 @@ const uploadFileMap = ref(new Map())
 // const bookmark = ref(false)
 const destroyed = ref(false)
 const typeWriterIsRunning = ref(false)
+const exportWord = () => {
+  emits('exportWord')
+}
 provide('container', container)
 provide('options', options)
 provide('editor', editor)
@@ -170,6 +177,7 @@ provide('viewer', viewer)
 provide('printing', printing)
 provide('fullscreen', fullscreen)
 provide('exportFile', exportFile)
+provide('exportWord', exportWord)
 provide('uploadFileMap', uploadFileMap)
 // provide('bookmark', bookmark)
 provide('destroyed', destroyed)

@@ -68,17 +68,18 @@ const importWord = () => {
     // 使用用户自定义导入方法
     if ($options?.useCustomMethod) {
       const result = await $options.onCustomImportMethod?.(file)
+      console.log(result, 'file-result')
       message.close()
       try {
-        if (result?.messages?.type === 'error') {
+        if (result?.code !== 200) {
           useMessage('error', {
             attach: container,
             content: `${t('base.importWord.convertError')} (${result.messages.message})`,
           })
           return
         }
-        if (result?.value) {
-          editor.value?.commands.setContent(result.value)
+        if (result?.code === 200) {
+          editor.value?.commands.setContent(result.data)
         } else {
           useMessage('error', {
             attach: container,

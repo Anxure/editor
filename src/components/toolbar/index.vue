@@ -29,6 +29,7 @@
       </template>
     </toolbar-classic>
     <div class="umo-toolbar-actions" :class="$toolbar.mode">
+      <slot name="extended-actions" />
       <t-popup
         v-if="
           options.toolbar.showSaveLabel && options.document.readOnly !== true

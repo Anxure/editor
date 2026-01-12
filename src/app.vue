@@ -4,9 +4,13 @@
       <umo-editor
         ref="editorRef"
         v-bind="options"
+        @exportWord="handleExportWord"
         @customSaveContent="handleCustomSaveContent"
       >
         <template #paragraph_left_menu="props">
+          <umo-menu-button>1111</umo-menu-button>
+        </template>
+        <template #extended-actions>
           <umo-menu-button>1111</umo-menu-button>
         </template>
       </umo-editor>
@@ -39,6 +43,9 @@ console.log('editorRef', editorRef)
 const handleCustomSaveContent = () => {
   console.log('handleCustomSaveContent')
   editorRef.value?.saveContentStatus(true)
+}
+const handleExportWord = () => {
+  console.log('handleExportWord')
 }
 const options = $ref({
   toolbar: {

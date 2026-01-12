@@ -79,6 +79,7 @@
             />
             <menus-toolbar-base-markdown v-if="!disableMenu('markdown')" />
             <menus-toolbar-base-search-replace />
+            <menus-toolbar-base-full-text-correction />
           </div>
           <div class="umo-virtual-group">
             <menus-toolbar-base-viewer v-if="!disableMenu('viewer')" />
@@ -245,6 +246,7 @@
         <template v-if="currentMenu === 'export'">
           <div class="umo-virtual-group">
             <menus-toolbar-export-image v-if="!disableMenu('export-image')" />
+            <menus-toolbar-export-word v-if="!disableMenu('export-word')" />
             <menus-toolbar-export-pdf v-if="!disableMenu('export-pdf')" />
             <menus-toolbar-export-text v-if="!disableMenu('export-text')" />
           </div>

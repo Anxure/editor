@@ -105,6 +105,7 @@
       "message": "此操作会重置编辑器，切换后当前历史记录会丢失，将无法进行“撤回”等操作，确定要现在切换吗？",
       "toggle": "立即切换"
     },
+    "fullTextCorrection": "全文纠错",
     "quote": "引用",
     "redo": "重做",
     "selectAll": "全选",
