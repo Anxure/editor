@@ -23,10 +23,16 @@ export default Extension.create({
         key: new PluginKey('selection'),
         props: {
           decorations(state) {
-            if (state.selection.empty) {
+            // if (state.selection.empty) {
+            //   return null
+            // }
+            if (
+              state.selection.empty ||
+              editor.isFocused ||
+              !editor.isEditable
+            ) {
               return null
             }
-
             // if (editor.isFocused) {
             //   return null
             // }
