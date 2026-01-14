@@ -135,6 +135,7 @@ const emits = defineEmits([
   'menuChange',
   'customSaveContent',
   'exportWord',
+  'handleFullTextCorrection',
 ])
 // 撤销重做的记录步骤
 const historyRecords = ref({
@@ -183,6 +184,10 @@ provide('uploadFileMap', uploadFileMap)
 provide('destroyed', destroyed)
 provide('historyRecords', historyRecords)
 provide('typeWriterIsRunning', typeWriterIsRunning)
+provide('handleFullTextCorrection', () => {
+  // console.log('handleFullTextCorrection')
+  emits('handleFullTextCorrection')
+})
 
 watch(
   () => options.value.page,

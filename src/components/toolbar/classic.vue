@@ -64,7 +64,9 @@
         <div class="umo-virtual-group">
           <menus-toolbar-base-import-word v-if="!disableMenu('import-word')" />
           <menus-toolbar-base-markdown v-if="!disableMenu('markdown')" />
-          <menus-toolbar-base-search-replace />
+          <menus-toolbar-base-search-replace
+            v-if="!disableMenu('full-text-correction')"
+          />
         </div>
         <div class="umo-virtual-group">
           <menus-toolbar-base-viewer v-if="!disableMenu('viewer')" />

@@ -92,7 +92,6 @@
 <script setup lang="ts">
 import { nodeViewProps, NodeViewWrapper } from '@tiptap/vue-3'
 import Drager from 'es-drager'
-import { base64ToFile } from 'file64'
 
 import { shortId } from '@/utils/short-id'
 
@@ -127,14 +126,21 @@ const nodeStyle = $computed(() => {
 })
 
 const uploadImage = async () => {
-  if (
-    node.attrs.uploaded ||
-    !node.attrs.id ||
-    !uploadFileMap.value.has(node.attrs.id)
-  ) {
+  // 如果已经是 base64 格式，直接标记为已上传
+  if (node.attrs.src?.startsWith('data:image')) {
     updateAttributesWithoutHistory(editor.value, { uploaded: true }, getPos())
     return
   }
+  // 如果已经上传过，直接返回
+  if (node.attrs.uploaded) {
+    return
+  }
+  // 如果没有 id 或文件不在 uploadFileMap 中，标记为已上传
+  if (!node.attrs.id || !uploadFileMap.value.has(node.attrs.id)) {
+    updateAttributesWithoutHistory(editor.value, { uploaded: true }, getPos())
+    return
+  }
+  // 对于非 base64 的图片（可能是旧数据），仍然尝试上传
   try {
     const file = uploadFileMap.value.get(node.attrs.id)
     const { id, url } = (await options.value?.onFileUpload?.(file)) ?? {}
@@ -249,22 +255,19 @@ watch(
 watch(
   () => node.attrs.src,
   async (src: string) => {
-    if (node.attrs.uploaded === false && !error.value) {
-      if (src?.startsWith('data:image')) {
-        const [data, type] = src.split(';')[0].split(':')
-        let [_, ext] = type.split('/')
-        if (ext === 'jpeg') {
-          ext = 'jpg'
-        }
-        if (ext === 'svg+xml') {
-          ext = 'svg'
-        }
-        const filename = shortId(10)
-        const file = await base64ToFile(src, `${filename}.${ext}`, {
-          type,
-        })
-        uploadFileMap.value.set(node.attrs.id, file)
+    // 如果是 base64 格式，直接标记为已上传，不需要转换和上传
+    if (src?.startsWith('data:image')) {
+      if (!node.attrs.uploaded) {
+        updateAttributesWithoutHistory(
+          editor.value,
+          { uploaded: true },
+          getPos(),
+        )
       }
+      return
+    }
+    // 对于非 base64 的图片（可能是旧数据或 ObjectURL），继续原有逻辑
+    if (node.attrs.uploaded === false && !error.value) {
       await nextTick()
       void uploadImage()
     }

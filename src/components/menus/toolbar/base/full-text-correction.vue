@@ -10,7 +10,5 @@
 <!-- v-if="options.document?.enableMarkdown" -->
 
 <script setup lang="ts">
-const handleFullTextCorrection = () => {
-  console.log('handleFullTextCorrection')
-}
+const handleFullTextCorrection = inject('handleFullTextCorrection')
 </script>

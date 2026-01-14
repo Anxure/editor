@@ -2,6 +2,7 @@ import { mergeAttributes, Node } from '@tiptap/core'
 import { type Editor, VueNodeViewRenderer } from '@tiptap/vue-3'
 
 import { shortId } from '@/utils/short-id'
+import { fileToBase64 } from '@/utils/file'
 
 import NodeView from './node-view.vue'
 
@@ -56,13 +57,21 @@ declare module '@tiptap/core' {
       setFile: (options: any) => ReturnType
     }
     insertFile: {
-      insertFile: (options: any) => ReturnType
+      insertFile: (options: {
+        file?: File
+        src?: string
+        uploadFileMap?: Map<string, File> | undefined
+        autoType?: boolean
+        pos?: number
+        fileDim?: { width?: number; height?: number; inline?: boolean } | null
+      }) => ReturnType
     }
     selectFiles: {
       selectFiles: (
         type: string,
         container: string,
-        autoType: boolean,
+        uploadFileMap?: Map<string, File>,
+        autoType?: boolean,
       ) => ReturnType
     }
   }
@@ -131,8 +140,52 @@ export default Node.create({
           })
         },
       insertFile:
-        ({ file, uploadFileMap, autoType, pos, fileDim }) =>
+        ({ file, src, uploadFileMap, autoType, pos, fileDim }) =>
         ({ editor, commands }) => {
+          // 如果提供了 src（base64），直接使用
+          if (src) {
+            const position = pos ?? editor.state.selection.anchor
+            const id = shortId(10)
+            const nodeData: Record<string, any> = {
+              id,
+              src,
+              uploaded: true,
+              previewType: 'image',
+            }
+
+            // 如果提供了文件信息，添加到节点数据中
+            if (file) {
+              const { name, type, size } = file
+              nodeData.name = name
+              nodeData.type = type ?? 'image'
+              nodeData.size = size
+            }
+
+            const { width, height, inline } = fileDim ?? {}
+            if (width && width > 0) {
+              nodeData.width = width
+            }
+            if (height && height > 0) {
+              nodeData.height = height
+            }
+
+            let nodeType = 'image'
+            if (inline) {
+              nodeType = 'inlineImage'
+              nodeData.inline = true
+            }
+
+            return commands.insertContentAt(position, {
+              type: autoType ? nodeType : 'file',
+              attrs: nodeData,
+            })
+          }
+
+          // 原有逻辑：处理文件对象
+          if (!file) {
+            return false
+          }
+
           const { type, name, size } = file
           const { options } = editor.storage
           const { maxSize } = options.file
@@ -162,40 +215,37 @@ export default Node.create({
           }
           // 插入节点
           const id = shortId(10)
-          uploadFileMap.set(id, file)
 
-          let nodeData = {
+          let nodeData: Record<string, any> = {
             id,
-            [previewType === 'file' ? 'url' : 'src']: URL.createObjectURL(file),
             name,
             type: type ?? 'unknown', // Ensure type is never null
             size,
             previewType,
           }
 
-          // 图片处理
+          // 图片处理：使用 ObjectURL（base64 转换在 selectFiles 中完成）
           if (previewType === 'image') {
+            nodeData.src = URL.createObjectURL(file)
+
             const { width, height, inline } = fileDim ?? {}
             if (width && width > 0) {
-              nodeData = {
-                ...nodeData,
-                width,
-              }
+              nodeData.width = width
             }
             if (height && height > 0) {
-              nodeData = {
-                ...nodeData,
-                height,
-              }
+              nodeData.height = height
             }
             if (inline) {
               previewType = 'inlineImage'
-              nodeData = {
-                ...nodeData,
-                inline: true,
-              }
+              nodeData.inline = true
             }
+          } else {
+            // 非图片文件仍然使用 ObjectURL 和 uploadFileMap
+            uploadFileMap?.set(id, file)
+            nodeData[previewType === 'file' ? 'url' : 'src'] =
+              URL.createObjectURL(file)
           }
+
           return commands.insertContentAt(position, {
             type: autoType ? previewType : 'file',
             attrs: nodeData,
@@ -224,24 +274,57 @@ export default Node.create({
           })
           // 打开文件对话框
           open()
-          let bool = false
           // 插入文件
-          onChange((fileList) => {
+          onChange(async (fileList) => {
             const files = Array.from(fileList ?? [])
             for (const file of files) {
-              bool = editor
-                .chain()
-                .focus()
-                .insertFile({
-                  file,
-                  uploadFileMap,
-                  autoType,
-                  fileDim: { inline: type === 'inlineImage' ? true : false },
-                })
-                .run()
+              const { type: fileType, name, size } = file
+              // 图片文件：先转换为 base64，然后插入
+              if (
+                fileType.startsWith('image/') &&
+                mimeTypes.image.includes(fileType)
+              ) {
+                try {
+                  const base64 = await fileToBase64(file)
+                  editor
+                    .chain()
+                    .focus()
+                    .insertFile({
+                      src: base64,
+                      file: {
+                        name,
+                        type: fileType,
+                        size,
+                      } as File,
+                      uploadFileMap,
+                      autoType,
+                      fileDim: {
+                        inline: type === 'inlineImage' ? true : false,
+                      },
+                    })
+                    .run()
+                } catch (error) {
+                  useMessage('error', {
+                    attach: container,
+                    content: (error as Error).message || t('file.convertError'),
+                  })
+                }
+              } else {
+                // 非图片文件：直接插入
+                editor
+                  .chain()
+                  .focus()
+                  .insertFile({
+                    file,
+                    uploadFileMap,
+                    autoType,
+                    fileDim: { inline: type === 'inlineImage' ? true : false },
+                  })
+                  .run()
+              }
             }
           })
-          return bool
+          return true
         },
     }
   },

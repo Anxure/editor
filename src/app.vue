@@ -6,12 +6,13 @@
         v-bind="options"
         @exportWord="handleExportWord"
         @customSaveContent="handleCustomSaveContent"
+        @handleFullTextCorrection="handleFullTextCorrection"
       >
         <template #paragraph_left_menu="props">
-          <umo-menu-button>1111</umo-menu-button>
+          <!-- <umo-menu-button>1111</umo-menu-button> -->
         </template>
         <template #extended-actions>
-          <umo-menu-button>1111</umo-menu-button>
+          <!-- <umo-menu-button>1111</umo-menu-button> -->
         </template>
       </umo-editor>
     </div>
@@ -46,6 +47,9 @@ const handleCustomSaveContent = () => {
 }
 const handleExportWord = () => {
   console.log('handleExportWord')
+}
+const handleFullTextCorrection = () => {
+  console.log('handleFullTextCorrection')
 }
 const options = $ref({
   toolbar: {

@@ -215,7 +215,7 @@ export const getDefaultExtensions = ({
             file,
             uploadFileMap: uploadFileMap.value,
             autoType: true,
-            fileDim,
+            fileDim: fileDim ?? undefined,
           })
         }
         // 恢复滚动位置
