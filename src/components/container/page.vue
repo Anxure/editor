@@ -1,53 +1,33 @@
 <template>
   <div class="umo-main-container">
-    <container-toc
-      v-if="pageOptions.showToc"
-      @close="pageOptions.showToc = false"
-    />
-    <div
-      :class="`umo-zoomable-container umo-${pageOptions.layout}-container umo-scrollbar`"
-    >
-      <div
-        class="umo-zoomable-content"
-        :style="{
-          width: pageZoomWidth,
-          height: pageZoomHeight,
-        }"
-      >
-        <t-watermark
-          class="umo-page-content"
-          :style="{
-            '--umo-page-orientation': pageOptions.orientation,
-            '--umo-page-background': pageOptions.background,
-            '--umo-page-margin-top': (pageOptions.margin?.top ?? '0') + 'cm',
-            '--umo-page-margin-bottom':
-              (pageOptions.margin?.bottom ?? '0') + 'cm',
-            '--umo-page-margin-left': (pageOptions.margin?.left ?? '0') + 'cm',
-            '--umo-page-margin-right':
-              (pageOptions.margin?.right ?? '0') + 'cm',
-            '--umo-page-width':
-              pageOptions.layout === 'page' ? pageSize.width + 'cm' : 'auto',
-            '--umo-page-height':
-              pageOptions.layout === 'page' ? pageSize.height + 'cm' : '100%',
-            width:
-              pageOptions.layout === 'page' ? pageSize.width + 'cm' : '100%',
-            transform: `scale(${pageOptions.zoomLevel ? pageOptions.zoomLevel / 100 : 1})`,
-          }"
-          :alpha="pageOptions.watermark.alpha"
-          v-bind="watermarkOptions"
-          :watermark-content="pageOptions.watermark"
-        >
+    <container-toc v-if="pageOptions.showToc" @close="pageOptions.showToc = false" />
+    <div :class="`umo-zoomable-container umo-${pageOptions.layout}-container umo-scrollbar`">
+      <div class="umo-zoomable-content" :style="{
+        width: pageZoomWidth,
+        height: pageZoomHeight,
+      }">
+        <t-watermark class="umo-page-content" :style="{
+          '--umo-page-orientation': pageOptions.orientation,
+          '--umo-page-background': pageOptions.background,
+          '--umo-page-margin-top': (pageOptions.margin?.top ?? '0') + 'cm',
+          '--umo-page-margin-bottom':
+            (pageOptions.margin?.bottom ?? '0') + 'cm',
+          '--umo-page-margin-left': (pageOptions.margin?.left ?? '0') + 'cm',
+          '--umo-page-margin-right':
+            (pageOptions.margin?.right ?? '0') + 'cm',
+          '--umo-page-width':
+            pageOptions.layout === 'page' ? pageSize.width + 'cm' : 'auto',
+          '--umo-page-height':
+            pageOptions.layout === 'page' ? pageSize.height + 'cm' : '100%',
+          width:
+            pageOptions.layout === 'page' ? pageSize.width + 'cm' : '100%',
+          transform: `scale(${pageOptions.zoomLevel ? pageOptions.zoomLevel / 100 : 1})`,
+        }" :alpha="pageOptions.watermark.alpha" v-bind="watermarkOptions" :watermark-content="pageOptions.watermark">
           <div class="umo-page-node-header" contenteditable="false">
-            <div
-              class="umo-page-corner corner-tl"
-              style="width: var(--umo-page-margin-left)"
-            ></div>
+            <div class="umo-page-corner corner-tl" style="width: var(--umo-page-margin-left)"></div>
 
             <div class="umo-page-node-header-content"></div>
-            <div
-              class="umo-page-corner corner-tr"
-              style="width: var(--umo-page-margin-right)"
-            ></div>
+            <div class="umo-page-corner corner-tr" style="width: var(--umo-page-margin-right)"></div>
           </div>
           <div class="umo-page-node-content">
             <editor>
@@ -60,40 +40,23 @@
             </editor>
           </div>
           <div class="umo-page-node-footer" contenteditable="false">
-            <div
-              class="umo-page-corner corner-bl"
-              style="width: var(--umo-page-margin-left)"
-            ></div>
+            <div class="umo-page-corner corner-bl" style="width: var(--umo-page-margin-left)"></div>
             <div class="umo-page-node-footer-content"></div>
-            <div
-              class="umo-page-corner corner-br"
-              style="width: var(--umo-page-margin-right)"
-            ></div>
+            <div class="umo-page-corner corner-br" style="width: var(--umo-page-margin-right)"></div>
           </div>
         </t-watermark>
       </div>
     </div>
-    <t-image-viewer
-      v-model:visible="imageViewer.visible"
-      v-model:index="currentImageIndex"
-      :images="previewImages"
-      @close="imageViewer.visible = false"
-    />
-    <t-back-top
-      :container="`${container} .umo-zoomable-container`"
-      :visible-height="800"
-      size="small"
-      :offset="['25px', '30px']"
-    />
+    <t-image-viewer v-model:visible="imageViewer.visible" v-model:index="currentImageIndex" :images="previewImages" @close="imageViewer.visible = false" />
+    <t-back-top :container="`${container} .umo-zoomable-container`" :visible-height="800" size="small" :offset="['25px', '30px']" />
     <container-search-replace />
     <container-print />
   </div>
   <div v-if="viewerVisible" class="umo-viewer-container">
-    <umo-viewer
-      v-bind="viewerOptions"
-      @edit="viewer = false"
-      @close="viewer = false"
-    />
+    <div class="umo-viewer-close-button" @click="viewer = false">
+      <t-icon name="close" size="24" />
+    </div>
+    <umo-viewer v-bind="viewerOptions" @edit="viewer = false" @close="viewer = false" :showHeader="false" />
   </div>
 </template>
 
@@ -246,9 +209,11 @@ watch(viewer, async (visible: boolean) => {
 .umo-zoomable-container {
   flex: 1;
   scroll-behavior: smooth;
+
   &.umo-page-container {
     padding: 20px 50px;
     box-sizing: border-box;
+
     .umo-zoomable-content {
       margin: 0 auto;
       box-shadow:
@@ -256,21 +221,27 @@ watch(viewer, async (visible: boolean) => {
         rgba(0, 0, 0, 0.04) 0px 0px 0px 1px;
     }
   }
+
   &.umo-web-container {
     display: flex;
+
     .umo-zoomable-content {
       flex: 1;
+
       .umo-page-corner {
         display: none;
       }
+
       .umo-page-content {
         min-height: 100%;
+
         .umo-page-node-content {
           min-height: 100px;
         }
       }
     }
   }
+
   .umo-page-content {
     transform-origin: 0 0;
     box-sizing: border-box;
@@ -283,6 +254,7 @@ watch(viewer, async (visible: boolean) => {
     overflow: visible !important;
     display: flex;
     flex-direction: column;
+
     [contenteditable] {
       outline: none;
     }
@@ -367,17 +339,34 @@ watch(viewer, async (visible: boolean) => {
 
 .umo-back-top {
   position: absolute;
+
   &:hover {
     opacity: 0.9;
     background-color: var(--umo-color-white) !important;
+
     .umo-back-top__icon {
       color: var(--umo-primary-color);
     }
   }
 }
+
 .umo-viewer-container {
   position: absolute;
   inset: 0;
   z-index: 1000;
+
+  .umo-viewer-close-button {
+    cursor: pointer;
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    width: 32px;
+    height: 32px;
+    background-color: var(--umo-color-white);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1001;
+  }
 }
 </style>

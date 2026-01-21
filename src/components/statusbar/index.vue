@@ -2,98 +2,49 @@
   <div v-if="!page.preview?.enabled" class="umo-status-bar">
     <div class="umo-status-bar-left">
       <tooltip :content="page.showToc ? t('toc.hide') : t('toc.show')">
-        <t-button
-          class="umo-status-bar-button"
-          :class="{ active: page.showToc }"
-          variant="text"
-          size="small"
-          @click="page.showToc = !page.showToc"
-        >
+        <t-button class="umo-status-bar-button" :class="{ active: page.showToc }" variant="text" size="small" @click="page.showToc = !page.showToc">
           <icon name="toc" color="red" />
         </t-button>
       </tooltip>
-      <tooltip
-        v-if="options.document?.enableSpellcheck"
-        :content="
-          $document?.enableSpellcheck
-            ? t('spellcheck.disable')
-            : t('spellcheck.enable')
-        "
-      >
-        <t-button
-          class="umo-status-bar-button"
-          :class="{ active: $document.enableSpellcheck }"
-          variant="text"
-          size="small"
-          @click="toggleSpellcheck"
-        >
+      <tooltip v-if="options.document?.enableSpellcheck" :content="$document?.enableSpellcheck
+        ? t('spellcheck.disable')
+        : t('spellcheck.enable')
+        ">
+        <t-button class="umo-status-bar-button" :class="{ active: $document.enableSpellcheck }" variant="text" size="small" @click="toggleSpellcheck">
           <icon name="spellcheck" color="red" />
         </t-button>
       </tooltip>
       <tooltip :content="t('shortcut.title')">
-        <t-button
-          class="umo-status-bar-button"
-          variant="text"
-          size="small"
-          @click="showShortcut = true"
-        >
+        <t-button class="umo-status-bar-button" variant="text" size="small" @click="showShortcut = true">
           <icon name="shortcut" />
         </t-button>
       </tooltip>
       <tooltip :content="t('resetAll.title')">
-        <t-button
-          class="umo-status-bar-button"
-          variant="text"
-          size="small"
-          @click="reset(false)"
-        >
+        <t-button class="umo-status-bar-button" variant="text" size="small" @click="reset(false)">
           <icon name="clear-cache" />
         </t-button>
       </tooltip>
       <!-- 请遵循开源协议，勿删除或隐藏版权信息！ -->
       <tooltip :content="t('about.title')">
-        <t-button
-          class="umo-status-bar-button"
-          variant="text"
-          size="small"
-          @click="about = !about"
-        >
+        <t-button class="umo-status-bar-button" variant="text" size="small" @click="about = !about">
           <icon name="about" />
         </t-button>
       </tooltip>
       <div class="umo-status-bar-split"></div>
-      <t-dropdown
-        :attach="container"
-        :popup-props="{
-          onVisibleChange(visible: boolean) {
-            showLayoutSelect = visible
-          },
-        }"
-        placement="top-left"
-        trigger="click"
-      >
-        <t-button
-          class="umo-status-bar-button auto-width"
-          variant="text"
-          size="small"
-        >
+      <t-dropdown :attach="container" :popup-props="{
+        onVisibleChange(visible: boolean) {
+          showLayoutSelect = visible
+        },
+      }" placement="top-left" trigger="click">
+        <t-button class="umo-status-bar-button auto-width" variant="text" size="small">
           <icon :name="`layout-${page.layout}`" />
           {{ currentLayout.content }}
-          <icon
-            name="arrow-down"
-            :style="{
-              transform: `rotate(${showLayoutSelect ? '180deg' : 0})`,
-            }"
-          />
+          <icon name="arrow-down" :style="{
+            transform: `rotate(${showLayoutSelect ? '180deg' : 0})`,
+          }" />
         </t-button>
         <t-dropdown-menu>
-          <t-dropdown-item
-            v-for="item in layouts"
-            :key="item.value"
-            :value="item.value"
-            :active="item.value === page.layout"
-            @click="page.layout = item.value"
-          >
+          <t-dropdown-item v-for="item in layouts" :key="item.value" :value="item.value" :active="item.value === page.layout" @click="page.layout = item.value">
             <div class="umo-layout-dropdown-item">
               <icon :name="`layout-${item.value}`" size="16" />
               {{ item.content }}
@@ -102,28 +53,15 @@
         </t-dropdown-menu>
       </t-dropdown>
       <div class="umo-status-bar-split"></div>
-      <t-popup
-        v-if="editor"
-        v-model="showWordCount"
-        trigger="click"
-        placement="top-left"
-      >
-        <t-button
-          class="umo-status-bar-button auto-width word-count"
-          variant="text"
-          size="small"
-        >
+      <t-popup v-if="editor" v-model="showWordCount" trigger="click" placement="top-left">
+        <t-button class="umo-status-bar-button auto-width word-count" variant="text" size="small">
           <span v-if="selectionCharacters > 0">
             {{ selectionCharacters }}/
           </span>
           <span class="umo-word-count">
-            {{ editor.storage.characterCount.characters() }}</span
-          >
+            {{ editor.storage.characterCount.characters() }}</span>
           {{ t('wordCount.characters') }}
-          <icon
-            name="arrow-down"
-            :style="{ transform: `rotate(${showWordCount ? '180deg' : 0})` }"
-          />
+          <icon name="arrow-down" :style="{ transform: `rotate(${showWordCount ? '180deg' : 0})` }" />
         </t-button>
         <template #content>
           <div v-if="showWordCount" class="umo-word-count-detail">
@@ -151,123 +89,59 @@
       </t-popup>
     </div>
     <div class="umo-status-bar-right">
-      <tooltip
-        :content="
-          page.preview?.enabled ? t('preview.disable') : t('preview.title')
-        "
-      >
-        <t-button
-          class="umo-status-bar-button"
-          :class="{ active: page.preview?.enabled }"
-          variant="text"
-          size="small"
-          @click="togglePreview"
-        >
+      <tooltip :content="page.preview?.enabled ? t('preview.disable') : t('preview.title')
+        ">
+        <t-button class="umo-status-bar-button" :class="{ active: page.preview?.enabled }" variant="text" size="small" @click="togglePreview">
           <icon name="preview" />
         </t-button>
       </tooltip>
-      <tooltip
-        :content="`${fullscreen?.isFullscreen ? t('fullscreen.disable') : t('fullscreen.title')} (${getShortcut('Ctrl+F11')})`"
-      >
-        <t-button
-          class="umo-status-bar-button"
-          variant="text"
-          size="small"
-          @click="toggleFullscreen"
-        >
+      <tooltip :content="`${fullscreen?.isFullscreen ? t('fullscreen.disable') : t('fullscreen.title')} (${getShortcut('Ctrl+F11')})`">
+        <t-button class="umo-status-bar-button" variant="text" size="small" @click="toggleFullscreen">
           <icon :name="fullscreen ? 'full-screen-exit' : 'full-screen'" />
         </t-button>
       </tooltip>
       <div class="umo-status-bar-split"></div>
       <div v-if="page.layout === 'page'" class="umo-zoom-level-bar">
         <tooltip :content="`${t('zoom.zoomOut')} (${getShortcut('Ctrl-')})`">
-          <t-button
-            class="umo-status-bar-button"
-            variant="text"
-            size="small"
-            :disabled="(page.zoomLevel ?? 21) <= 20"
-            @click="zoomOut"
-          >
+          <t-button class="umo-status-bar-button" variant="text" size="small" :disabled="(page.zoomLevel ?? 21) <= 20" @click="zoomOut">
             <icon name="minus" />
           </t-button>
         </tooltip>
-        <t-slider
-          v-model="page.zoomLevel"
-          class="umo-zoom-level-slider"
-          :min="20"
-          :max="500"
-          :step="10"
-          :tooltip-props="{
-            showArrow: false,
-            theme: 'light',
-            popperOptions: {
-              modifiers: [{ name: 'offset', options: { offset: [0, 2] } }],
-            },
-          }"
-          :label="t('zoom.level') + '${value}%%'"
-        />
+        <t-slider v-model="page.zoomLevel" class="umo-zoom-level-slider" :min="20" :max="500" :step="10" :tooltip-props="{
+          showArrow: false,
+          theme: 'light',
+          popperOptions: {
+            modifiers: [{ name: 'offset', options: { offset: [0, 2] } }],
+          },
+        }" :label="t('zoom.level') + '${value}%%'" />
         <tooltip :content="`${t('zoom.zoomIn')} (${getShortcut('Ctrl+')})`">
-          <t-button
-            class="umo-status-bar-button"
-            variant="text"
-            size="small"
-            :disabled="!!(page.zoomLevel && page.zoomLevel >= 500)"
-            @click="zoomIn"
-          >
+          <t-button class="umo-status-bar-button" variant="text" size="small" :disabled="!!(page.zoomLevel && page.zoomLevel >= 500)" @click="zoomIn">
             <icon name="plus" />
           </t-button>
         </tooltip>
         <tooltip :content="`${t('zoom.autoWidth')} (${getShortcut('Ctrl0')})`">
-          <t-button
-            class="umo-status-bar-button"
-            :class="{ active: page.autoWidth }"
-            variant="text"
-            size="small"
-            @click="autoWidth(true)"
-          >
+          <t-button class="umo-status-bar-button" :class="{ active: page.autoWidth }" variant="text" size="small" @click="autoWidth(true)">
             <icon name="auto-width" />
           </t-button>
         </tooltip>
         <tooltip :content="`${t('zoom.reset')} (${getShortcut('Ctrl1')})`">
-          <t-button
-            class="umo-status-bar-button auto-width"
-            variant="text"
-            style="width: 80px"
-            size="small"
-            @click="zoomReset"
-          >
+          <t-button class="umo-status-bar-button auto-width" variant="text" style="width: 80px" size="small" @click="zoomReset">
             {{ page.zoomLevel }}%
           </t-button>
         </tooltip>
       </div>
-      <t-dropdown
-        :attach="container"
-        :options="langs"
-        placement="top-left"
-        trigger="click"
-        @click="changeLang"
-      >
-        <t-button
-          class="umo-status-bar-button auto-width umo-lang-button"
-          variant="text"
-          size="small"
-        >
+      <!-- <t-dropdown :attach="container" :options="langs" placement="top-left" trigger="click" @click="changeLang">
+        <t-button class="umo-status-bar-button auto-width umo-lang-button" variant="text" size="small">
           {{ lang }}
         </t-button>
-      </t-dropdown>
+      </t-dropdown> -->
     </div>
   </div>
   <div v-else class="umo-preview-bar">
     <div v-if="countdownValue !== ''" class="umo-preview-countdown">
       {{ countdownValue }}
     </div>
-    <statusbar-countdown
-      :visible="countdownSetting"
-      @visible-change="(visible: boolean) => (countdownSetting = visible)"
-      @countdown-change="countdownChange"
-      @exit-preivew="exitPreview"
-      @close="countdownSetting = false"
-    >
+    <statusbar-countdown :visible="countdownSetting" @visible-change="(visible: boolean) => (countdownSetting = visible)" @countdown-change="countdownChange" @exit-preivew="exitPreview" @close="countdownSetting = false">
       <tooltip :content="t('preview.countdown.title')">
         <div class="item" :class="{ active: countdownSetting }">
           <icon name="time" />
@@ -275,14 +149,10 @@
       </tooltip>
     </statusbar-countdown>
     <tooltip :content="t('preview.laserPointer')">
-      <div
-        class="item"
-        :class="{ active: page.preview?.laserPointer }"
-        @click="
-          page.preview &&
-          (page.preview.laserPointer = !page.preview.laserPointer)
-        "
-      >
+      <div class="item" :class="{ active: page.preview?.laserPointer }" @click="
+        page.preview &&
+        (page.preview.laserPointer = !page.preview.laserPointer)
+        ">
         <icon name="laser-pointer" />
       </div>
     </tooltip>
@@ -292,11 +162,7 @@
       </div>
     </tooltip>
     <tooltip :content="`${t('zoom.autoWidth')} (${getShortcut('Ctrl0')})`">
-      <div
-        class="item"
-        :class="{ active: page.autoWidth }"
-        @click="autoWidth(true)"
-      >
+      <div class="item" :class="{ active: page.autoWidth }" @click="autoWidth(true)">
         <icon name="auto-width" />
       </div>
     </tooltip>
@@ -312,15 +178,7 @@
     </tooltip>
   </div>
   <statusbar-about :visible="about" @close="about = false" />
-  <t-drawer
-    v-model:visible="showShortcut"
-    :attach="container"
-    size="320px"
-    :footer="false"
-    :close-btn="true"
-    destroy-on-close
-    show-in-attached-element
-  >
+  <t-drawer v-model:visible="showShortcut" :attach="container" size="320px" :footer="false" :close-btn="true" destroy-on-close show-in-attached-element>
     <template #header>
       <div class="umo-shortcuts-drawer-header">
         <icon name="shortcut" />
@@ -576,16 +434,19 @@ watch(
 
   @media screen and (max-width: 640px) {
     overflow-x: auto;
+
     &::-webkit-scrollbar {
       display: none;
     }
   }
+
   .umo-status-bar-split {
     height: 16px;
     width: 1px;
     background-color: var(--umo-border-color);
     margin: 0 10px;
   }
+
   .umo-status-bar-button {
     --td-comp-size-xs: 18px;
     --td-comp-paddingLR-l: 8px;
@@ -593,43 +454,53 @@ watch(
     font-size: 14px;
     margin: 0 4px;
     color: var(--umo-text-color);
+
     &:not(.auto-width) {
       width: var(--td-comp-size-xs);
     }
+
     &.auto-width {
       --td-comp-paddingLR-s: 0;
       width: auto;
+
       :deep(.umo-button__text) {
         display: flex;
         align-items: center;
         gap: 3px;
         font-size: 12px;
+
         .umo-icon {
           font-size: 14px;
         }
       }
     }
+
     &.word-count {
       padding-left: 2px;
       padding-right: 0;
+
       :deep(.umo-button__text) {
         display: flex;
         align-items: center;
+
         .umo-icon {
           margin-left: 3px;
           transform: rotate(180deg);
         }
       }
     }
+
     :deep(.umo-button__text) {
       padding: 0 5px;
     }
+
     &.active {
       background-color: var(--umo-button-hover-background);
       border-color: var(--umo-button-hover-background);
       color: var(--umo-primary-color);
     }
   }
+
   &-left {
     display: flex;
     align-items: center;
@@ -638,27 +509,32 @@ watch(
   &-right {
     display: flex;
     align-items: center;
+
     .umo-zoom-level-bar {
       width: 240px;
       display: flex;
       --td-comp-size-xxxs: 8px;
       --td-size-2: 3px;
       --td-brand-color: var(--umo-text-color);
+
       .umo-zoom-level-slider {
         :deep(.umo-slider__button) {
           background: var(--td-brand-color);
           border: none;
           box-shadow: none;
         }
+
         :deep(.umo-slider__track) {
           background: none;
         }
       }
     }
+
     @media screen and (max-width: 720px) {
       .umo-zoom-level-bar {
         width: auto;
       }
+
       .umo-zoom-level-slider,
       .umo-lang-button {
         display: none !important;
@@ -666,11 +542,13 @@ watch(
     }
   }
 }
+
 .umo-layout-dropdown-item {
   display: flex;
   align-items: center;
   gap: 5px;
 }
+
 .umo-preview-bar {
   position: absolute;
   left: 50%;
@@ -687,6 +565,7 @@ watch(
     var(--td-shadow-inset-right), var(--td-shadow-inset-bottom),
     var(--td-shadow-inset-left);
   gap: 5px;
+
   .umo-preview-countdown {
     display: flex;
     align-items: center;
@@ -696,6 +575,7 @@ watch(
     font-size: 14px;
     color: var(--umo-text-color-light);
   }
+
   .item {
     padding: 6px;
     border-radius: 8px;
@@ -714,14 +594,17 @@ watch(
     color: var(--umo-text-color-light);
     border-radius: var(--umo-radius-medium);
     cursor: pointer;
+
     &:hover {
       background-color: var(--umo-button-hover-background);
       color: var(--umo-text-color);
     }
+
     &.active {
       background-color: var(--umo-button-hover-background);
       color: var(--umo-primary-color);
     }
+
     :deep(.umo-icon) {
       font-size: 20px;
     }
@@ -735,26 +618,31 @@ watch(
   align-items: center;
   font-weight: 400;
   color: var(--umo-text-color);
+
   .umo-icon {
     font-size: 20px;
     margin-right: 6px;
   }
 }
+
 .umo-drawer__close-btn {
   margin-right: 3px;
 }
 
 .umo-word-count {
   margin-right: 0.25em;
+
   &-detail {
     padding: 10px 0 8px;
     width: 160px;
     font-size: 12px;
     color: var(--umo-text-color-light);
+
     ul {
       padding: 0;
       margin: 0;
     }
+
     li {
       list-style: none;
       cursor: default;
@@ -763,11 +651,13 @@ watch(
       justify-content: space-between;
       line-height: 28px;
       color: var(--umo-text-color);
+
       &:hover {
         background-color: var(--td-bg-color-container-hover);
       }
     }
   }
+
   &-title {
     padding: 0 12px;
     margin-bottom: 3px;

@@ -1,18 +1,6 @@
 <template>
-  <menus-button
-    v-if="hasRemoveBackgroundFunction"
-    ico="seal"
-    :text="t('tools.seal.text')"
-    huge
-    @menu-click="dialogVisible = true"
-  >
-    <modal
-      :visible="dialogVisible"
-      width="480px"
-      :confirm-btn="t('tools.seal.insert')"
-      @confirm="setSeal"
-      @close="dialogVisible = false"
-    >
+  <menus-button ico="seal" :text="t('tools.seal.text')" huge @menu-click="dialogVisible = true">
+    <modal :visible="dialogVisible" width="480px" :confirm-btn="t('tools.seal.insert')" @confirm="setSeal" @close="dialogVisible = false">
       <template #header>
         <icon name="seal" />
         {{ t('tools.seal.title') }}
@@ -31,11 +19,11 @@
 </template>
 
 <script setup lang="ts">
-import { removeBackground } from '@imgly/background-removal'
+// import { removeBackground } from '@imgly/background-removal'
 
 import { shortId } from '@/utils/short-id'
 
-const hasRemoveBackgroundFunction = typeof removeBackground === 'function'
+// const hasRemoveBackgroundFunction = typeof removeBackground === 'function'
 
 let dialogVisible = $ref(false)
 const editor = inject('editor')
@@ -65,21 +53,21 @@ const selectImage = () => {
       return
     }
     try {
-      sealImg = null
-      converting = t('tools.seal.converting1')
-      const img = await removeBackground(file, {
-        publicPath: `${options.value.cdnUrl}/libs/imgly/background-removal-data/`,
-        progress: (key, current, total) => {
-          if (key.startsWith('fetch')) {
-            converting = t('tools.seal.converting2', {
-              ppercentage: ((current / total) * 100).toFixed(1),
-            })
-          } else {
-            converting = t('tools.seal.converting3')
-          }
-        },
-      })
-      sealImg = URL.createObjectURL(img)
+      // sealImg = null
+      // converting = t('tools.seal.converting1')
+      // const img = await removeBackground(file, {
+      //   publicPath: `${options.value.cdnUrl}/libs/imgly/background-removal-data/`,
+      //   progress: (key, current, total) => {
+      //     if (key.startsWith('fetch')) {
+      //       converting = t('tools.seal.converting2', {
+      //         ppercentage: ((current / total) * 100).toFixed(1),
+      //       })
+      //     } else {
+      //       converting = t('tools.seal.converting3')
+      //     }
+      //   },
+      // })
+      // sealImg = URL.createObjectURL(img)
     } catch {
       useMessage('error', {
         attach: container,
@@ -136,6 +124,7 @@ const setSeal = async () => {
     margin-bottom: 6px;
     line-height: 1.4;
   }
+
   .umo-seal-uploader {
     margin-top: 20px;
     height: 240px;
@@ -148,6 +137,7 @@ const setSeal = async () => {
     position: relative;
     color: var(--umo-text-color-light);
     cursor: pointer;
+
     .umo-seal-img {
       max-height: 100%;
       max-width: 100%;

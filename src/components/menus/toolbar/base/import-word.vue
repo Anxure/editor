@@ -1,10 +1,5 @@
 <template>
-  <menus-button
-    ico="word"
-    :text="t('base.importWord.text')"
-    huge
-    @menu-click="importWord"
-  />
+  <menus-button ico="word" :text="t('base.importWord.text')" huge @menu-click="importWord" />
 </template>
 
 <script setup lang="ts">
@@ -79,7 +74,7 @@ const importWord = () => {
           return
         }
         if (result?.code === 200) {
-          editor.value?.commands.setContent(result.data)
+          editor.value?.commands.setContent(result.data.docContent)
         } else {
           useMessage('error', {
             attach: container,

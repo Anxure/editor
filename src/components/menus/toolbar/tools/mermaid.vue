@@ -1,38 +1,15 @@
 <template>
-  <menus-button
-    :ico="content ? 'edit' : 'mermaid'"
-    :text="content ? t('tools.mermaid.edit') : t('tools.mermaid.text')"
-    huge
-    @menu-click="menuClick"
-  >
-    <modal
-      :visible="dialogVisible"
-      icon="mermaid"
-      width="960px"
-      @confirm="setMermaid"
-      @close="dialogVisible = false"
-    >
+  <menus-button :ico="content ? 'edit' : 'mermaid'" :text="content ? t('tools.mermaid.edit') : t('tools.mermaid.text')" huge @menu-click="menuClick">
+    <modal :visible="dialogVisible" icon="mermaid" width="960px" @confirm="setMermaid" @close="dialogVisible = false">
       <template #header>
         <icon name="mermaid" />
         {{ content ? t('tools.mermaid.edit') : t('tools.mermaid.text') }}
       </template>
       <div class="umo-mermaid-container">
-        <t-textarea
-          v-model="mermaidCode"
-          class="umo-mermaid-code"
-          autofocus
-          :placeholder="t('tools.mermaid.placeholder')"
-        />
+        <t-textarea v-model="mermaidCode" class="umo-mermaid-code" autofocus :placeholder="t('tools.mermaid.placeholder')" />
         <div class="umo-mermaid-render">
-          <div
-            class="umo-mermaid-title"
-            v-text="t('tools.mermaid.preview')"
-          ></div>
-          <div
-            ref="mermaidRef"
-            class="umo-mermaid-svg narrow-scrollbar"
-            v-html="svgCode"
-          ></div>
+          <div class="umo-mermaid-title" v-text="t('tools.mermaid.preview')"></div>
+          <div ref="mermaidRef" class="umo-mermaid-svg narrow-scrollbar" v-html="svgCode"></div>
         </div>
       </div>
     </modal>
@@ -40,7 +17,7 @@
 </template>
 
 <script setup lang="ts">
-import mermaid from 'mermaid'
+// import mermaid from 'mermaid'
 import svg64 from 'svg64'
 
 import { shortId } from '@/utils/short-id'
@@ -59,14 +36,14 @@ const uploadFileMap = inject('uploadFileMap')
 
 //  初始化 Mermaid
 const mermaidInit = () => {
-  mermaid.initialize({
-    darkMode: false,
-    startOnLoad: false,
-    // fontFamily:'',
-    fontSize: 12,
-    theme: 'base',
-    securityLevel: 'loose',
-  })
+  // mermaid.initialize({
+  //   darkMode: false,
+  //   startOnLoad: false,
+  //   // fontFamily:'',
+  //   fontSize: 12,
+  //   theme: 'base',
+  //   securityLevel: 'loose',
+  // })
 }
 
 const menuClick = () => {
@@ -80,12 +57,12 @@ let mermaidCode = $ref('')
 let svgCode = $ref('')
 const mermaidRef = $ref<HTMLElement | null>(null)
 const renderMermaid = async () => {
-  try {
-    const { svg } = await mermaid.render('mermaid-svg', mermaidCode)
-    svgCode = svg
-  } catch {
-    svgCode = ''
-  }
+  // try {
+  //   const { svg } = await mermaid.render('mermaid-svg', mermaidCode)
+  //   svgCode = svg
+  // } catch {
+  //   svgCode = ''
+  // }
 }
 watch(
   () => dialogVisible,
@@ -154,14 +131,17 @@ const setMermaid = () => {
 <style lang="less" scoped>
 .umo-mermaid-container {
   display: flex;
+
   .umo-mermaid-code {
     width: 320px;
     margin-left: 2px;
+
     :deep(.umo-textarea__inner) {
       height: 100%;
       resize: none;
     }
   }
+
   .umo-mermaid-render {
     flex: 1;
     margin-left: 20px;
@@ -170,6 +150,7 @@ const setMermaid = () => {
     position: relative;
     overflow: hidden;
     box-sizing: border-box;
+
     .umo-mermaid-title {
       background-color: var(--umo-button-hover-background);
       padding: 0 10px;
@@ -177,6 +158,7 @@ const setMermaid = () => {
       font-size: 12px;
       border-bottom-right-radius: var(--umo-radius);
     }
+
     .umo-mermaid-svg {
       box-sizing: border-box;
       height: 320px;

@@ -1,23 +1,16 @@
 <template>
-  <modal
-    :visible="visible"
-    width="300px"
-    :footer="false"
-    @close="emits('close')"
-  >
+  <modal :visible="visible" width="300px" :footer="false" @close="emits('close')">
     <template #header>
       <icon name="about" />
       {{ t('about.title') }}
     </template>
-    <div
-      style="
+    <div style="
         display: flex;
         flex-direction: column;
         align-items: center;
         line-height: 2;
         padding: 30px 0 0;
-      "
-    >
+      ">
       <a href="https://www.umodoc.com" target="_blank">
         <img src="@/assets/images/logo.svg" width="160" style="display: flex" />
       </a>
@@ -28,10 +21,7 @@
       <p>
         <a href="https://github.com/umodoc/editor" target="_blank"> Github </a>
         |
-        <a
-          :href="`https://dev.umodoc.com/${locale === 'zh-CN' ? 'cn' : 'en'}/docs/editor`"
-          target="_blank"
-        >
+        <a :href="`https://dev.umodoc.com/${locale === 'zh-CN' ? 'cn' : 'en'}/docs/editor`" target="_blank">
           {{ t('about.documentation') }}
         </a>
         |
@@ -39,8 +29,8 @@
           NPM
         </a>
       </p>
-      <t-divider>{{ t('about.thanks') }}</t-divider>
-      <p style="text-align: center; font-size: 12px; padding: 0 10px">
+      <t-divider></t-divider>
+      <!-- <p style="text-align: center; font-size: 12px; padding: 0 10px">
         <a href="https://github.com/Cassielxd" target="_blank">Cassielxd</a>
         ·
         <a href="https://github.com/china-wangxu" target="_blank"
@@ -70,7 +60,7 @@
         <a href="https://github.com/vace" target="_blank">vace</a>
         ·
         <a href="https://github.com/Mikasa33" target="_blank">Mikasa33</a>
-      </p>
+      </p> -->
     </div>
   </modal>
 </template>
@@ -93,19 +83,23 @@ const { locale } = useI18n()
 img {
   margin-bottom: 30px;
 }
+
 p {
   margin: 3px 0 !important;
   line-height: 1.5;
+
   a,
   :deep(a) {
     color: var(--umo-primary-color);
     font-weight: 500;
     text-decoration: none;
+
     &:hover {
       text-decoration: underline;
     }
   }
 }
+
 :deep(.umo-divider) {
   margin: 30px 0 15px;
   font-size: 12px;
