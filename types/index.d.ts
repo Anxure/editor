@@ -1,7 +1,9 @@
 import type { Extension, HTMLContent, JSONContent } from '@tiptap/core'
 import type { FocusPosition } from '@tiptap/core'
 import { Fragment, Node as ProseMirrorNode } from '@tiptap/pm/model'
-
+import type { Editor } from '@tiptap/core'
+import type { Suggestion } from '@/extensions/documentSuggest'
+import type { Decoration } from '@tiptap/pm/view'
 export type SupportedLocale = 'en-US' | 'zh-CN'
 export type LayoutOption = 'web' | 'page'
 export interface MarginOption {
@@ -254,6 +256,20 @@ export interface UmoEditorOptions {
   ai?: {
     assistant?: AssistantOptions
   }
+  // 纠错扩展配置
+  documentSuggestConfig?: null | {
+    backendUrl?: string
+    rules?: any[]
+    fetchSuggestions?: (doc: any, rules: any[], editor: Editor) => Promise<Suggestion[]>
+    getCustomSuggestionDecoration?: (params: {
+      suggestion?: Suggestion
+      allSuggestions: Suggestion[]
+      ruleTitle?: string
+      isSelected: boolean
+      range: { from: number; to: number }
+      getDefaultDecorations: () => Decoration[]
+    }) => Decoration[]
+  },
   echarts?: EchartsOptions
   webPages?: WebPageItem[]
   templates?: Template[]

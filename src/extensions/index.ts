@@ -23,7 +23,10 @@ import Mathematics from '@tiptap-pro/extension-mathematics'
 import NodeRange from '@tiptap-pro/extension-node-range'
 import { getHierarchicalIndexes } from '@tiptap-pro/extension-table-of-contents'
 import { TableOfContents } from '@tiptap-pro/extension-table-of-contents'
-
+// 增加纠错扩展
+import { Decoration } from "@tiptap/pm/view";
+import { NodeId } from './nodeId'
+import { DocumentSuggest, type Suggestion as DocumentSuggestion } from './documentSuggest'
 import type { UmoEditorOptions } from '@/types'
 import { getImageDimensions } from '@/utils/file'
 import { shortId } from '@/utils/short-id'
@@ -63,6 +66,15 @@ import TextBox from './text-box'
 import Toc from './toc'
 import typeWriter from './type-writer'
 import Video from './video'
+
+
+// 用于 DocumentSuggest 扩展与 Vue 组件之间共享 tooltip 容器
+export const tooltipElement = ref<{
+  element: HTMLElement;
+  suggestion: DocumentSuggestion;
+  ruleTitle: string;
+} | null>(null);
+
 export const getDefaultExtensions = ({
   container,
   options,
@@ -241,6 +253,55 @@ export const getDefaultExtensions = ({
       color: 'var(--umo-primary-color)',
     }),
     typeWriter,
+    DocumentSuggest.configure({
+      backendUrl: options.value.documentSuggestConfig?.backendUrl,
+      rules: options.value.documentSuggestConfig?.rules || [],
+      fetchSuggestions: options.value.documentSuggestConfig?.fetchSuggestions,
+      // 自定义装饰器
+      getCustomSuggestionDecoration({
+        suggestion,
+        allSuggestions,
+        ruleTitle,
+        isSelected,
+        range,
+        getDefaultDecorations,
+      }: {
+        suggestion: DocumentSuggestion;
+        allSuggestions: DocumentSuggestion[];
+        ruleTitle: string;
+        isSelected: boolean;
+        range: { from: number; to: number };
+        getDefaultDecorations: () => Decoration[];
+      }) {
+        // 如果当前 tooltip 关联的 suggestion 已经不在列表中（如被拒绝/全部应用），主动清空 tooltip
+        if (
+          tooltipElement.value &&
+          !allSuggestions.some((s) => s.id === tooltipElement.value!.suggestion.id)
+        ) {
+          tooltipElement.value = null;
+          return [];
+        }
+        const decorations = getDefaultDecorations();
+        if (isSelected) {
+          decorations.push(
+            Decoration.widget(range.to, () => {
+              const element = document.createElement("span");
+              // 选中时，更新 tooltipElement
+              tooltipElement.value = { element, suggestion, ruleTitle };
+              return element;
+            })
+          );
+        } else {
+          // 如果当前取消选中的正好是 tooltip 上那条，清空 tooltip
+          if (tooltipElement.value?.suggestion?.id === suggestion.id) {
+            tooltipElement.value = null;
+          }
+        }
+
+        return decorations;
+      },
+    }),
+    NodeId
   ]
 
   // 合并扩展

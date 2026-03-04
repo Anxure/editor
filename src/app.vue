@@ -1,7 +1,17 @@
 <template>
   <div class="examples">
     <div class="box">
-      <umo-editor ref="editorRef" v-bind="options" @exportWord="handleExportWord" @customSaveContent="handleCustomSaveContent" @handleFullTextCorrection="handleFullTextCorrection">
+
+      <!-- ykx测试纠错 -->
+      <div v-if="isYkxDev" class="ykx-test-editor">
+        <umo-editor ref="editorRef" v-bind="testOptions">
+        </umo-editor>
+        <div class="test-panel">
+          <button @click="handleFullTextCorrection">纠错</button>
+        </div>
+      </div>
+      <umo-editor v-else ref="editorRef" v-bind="options" @exportWord="handleExportWord"
+        @customSaveContent="handleCustomSaveContent">
         <template #paragraph_left_menu="props">
           <!-- <umo-menu-button>1111</umo-menu-button> -->
         </template>
@@ -13,6 +23,7 @@
     <!-- <div class="box">
       <umo-editor editor-key="testaaa" :toolbar="{ defaultMode: 'classic' }" />
     </div> -->
+
   </div>
 </template>
 
@@ -20,6 +31,7 @@
 import { shortId } from '@/utils/short-id'
 
 const editorRef = useTemplateRef('editorRef')
+const isYkxDev = import.meta.env.MODE === 'ykx'
 const templates = [
   {
     title: '工作任务',
@@ -43,7 +55,8 @@ const handleExportWord = () => {
   console.log('handleExportWord')
 }
 const handleFullTextCorrection = () => {
-  console.log('handleFullTextCorrection')
+  const editor = editorRef.value?.useEditor?.()
+  editor?.chain().loadSuggestions().run()
 }
 const options = $ref({
   toolbar: {
@@ -137,9 +150,198 @@ const options = $ref({
     console.log(id, url, type)
   },
 })
+const testOptions = $ref({
+  documentSuggestConfig: {
+    rules: [
+      {
+        id: 'RULE_TITLE_SIZE',
+        name: '标题字号规范',
+        description: '标题(查找type为ul、li、heading的节点)必须使用h1-h6, params的level可以返回1-6',
+        severity: 'warning',
+        fixCommand: {
+          action: 'setHeading',
+          params: {
+            level: 1,
+          }
+        }
+      },
+      {
+        id: 'RULE_TEXT_COLOR_STYLE',
+        name: '文本颜色规范',
+        description: '文字里面不能出现红色， 你检测到后不用给参数给我',
+        severity: 'warning',
+        fixCommand: {
+          action: 'resetTextStyle',
+          params: {
+            color: '',
+          }
+        }
+      },
+      {
+        id: 'RULE_TEXT_BACKGROUND_STYLE',
+        name: '文本背景色规范',
+        description: '文字块不能出现背景色, 你检测到后不用给参数给我',
+        severity: 'warning',
+        fixCommand: {
+          action: 'resetTextStyle',
+          params: {
+            backgroundColor: ''
+          }
+        }
+      },
+      // {
+      //     id: 'RULE_GRAMMAR_PROBLEM',
+      //     name: '语法性问题',
+      //     description: '语法性问题，核心是找语句不通顺的，你需要把纠错后的文本返回到fixCommand的params中的text字段中',
+      //     severity: 'info',
+      //     fixCommand: {
+      //         action: 'replaceText',
+      //         params: {
+      //             text: '',
+      //         }
+      //     }
+      // },
+      {
+        id: 'RULE_GRAMMAR_PROBLEM',
+        name: '错别字问题',
+        description: '错别字问题，需要注意携带上text_pos的from和to字段',
+        severity: 'info',
+        fixCommand: {
+          action: 'replaceText',
+          params: {
+            text: '',
+          }
+        }
+      },
+      // {
+      //     id: 'RULE_FONT_FAMILY',
+      //     name: '字体规范',
+      //     description: '需采用仿宋字体',
+      //     severity: 'error',
+      //     fixCommand: {
+      //         action: 'setFontFamily',
+      //         params: {
+      //             family: '仿宋',
+      //         }
+      //     }
+      // },
+    ],
+    fetchSuggestions: async (doc: any, rules: any[], editor: any) => {
+      const openTest = false;
+      if (!openTest) {
+        let suggestions = [];
+        const resp = await fetch('http://localhost:8010/api/v1/ai/document/check', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            doc,
+            rules: rules,
+          }),
+        });
+        if (!resp.ok) {
+          throw new Error('Failed to fetch suggestions');
+        }
+        const payload = await resp.json();
+        suggestions = (payload.data.suggestions || []);
+        return suggestions;
+      } else {
+        return Promise.resolve([
+          {
+            "id": "d61a82fb-d18b-483b-a632-af6d7998c1d8",
+            "node_id": "dJmHlNge",
+            "message": "错别字：'本几构'应为'本机构'；'究简报'应为'研究简报'；'本研'应为'本研究'",
+            "rule_id": "RULE_GRAMMAR_PROBLEM",
+            "text_index": 0,
+            "text_pos": {
+              "from": 118,
+              "to": 121
+            },
+            "severity": "info",
+            "fixCommand": {
+              "action": "replaceText",
+              "params": {
+                "text": "本机构"
+              }
+            },
+            "meta": {
+              "section": "第一段"
+            }
+          },
+          {
+            "id": "e111309e-5806-4d53-bc28-c32649b5eaae",
+            "node_id": "dJmHlNge",
+            "message": "错别字：'本几构'应为'本机构'；'究简报'应为'研究简报'；'本研'应为'本研究'",
+            "rule_id": "RULE_GRAMMAR_PROBLEM",
+            "text_index": 0,
+            "text_pos": {
+              "from": 137,
+              "to": 144
+            },
+            "severity": "info",
+            "fixCommand": {
+              "action": "replaceText",
+              "params": {
+                "text": "研究简报"
+              }
+            },
+            "meta": {
+              "section": "第一段"
+            }
+          },
+          {
+            "id": "8cf26127-932c-45f6-8243-a51117a1c21e",
+            "node_id": "dJmHlNge",
+            "message": "错别字：'本几构'应为'本机构'；'究简报'应为'研究简报'；'本研'应为'本研究'",
+            "rule_id": "RULE_GRAMMAR_PROBLEM",
+            "text_index": 0,
+            "text_pos": {
+              "from": 159,
+              "to": 162
+            },
+            "severity": "info",
+            "fixCommand": {
+              "action": "replaceText",
+              "params": {
+                "text": "本研究"
+              }
+            },
+            "meta": {
+              "section": "第一段"
+            }
+          },
+          {
+            "id": "e86dd875-2509-4dc9-811c-46f4bde0433f",
+            "node_id": "BVreN3Ww",
+            "message": "错别字：'问字'应为'文字'",
+            "rule_id": "RULE_GRAMMAR_PROBLEM",
+            "text_index": 0,
+            "text_pos": {
+              "from": 11,
+              "to": 15
+            },
+            "severity": "info",
+            "fixCommand": {
+              "action": "replaceText",
+              "params": {
+                "text": "文字"
+              }
+            },
+            "meta": {
+              "section": "第三段"
+            }
+          }
+        ])
+      }
+
+
+    }
+  },
+})
 </script>
 
-<style>
+<style lang="less">
 html,
 body {
   padding: 0;
@@ -164,5 +366,22 @@ html,
 body {
   height: 100vh;
   overflow: hidden;
+}
+
+.ykx-test-editor {
+  position: relative;
+
+  .test-panel {
+    position: absolute;
+    top: 0;
+    right: 0;
+    z-index: 1000;
+    width: 300px;
+    height: 300px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    padding: 10px;
+    background-color: #fff;
+  }
 }
 </style>

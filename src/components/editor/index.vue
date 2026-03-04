@@ -1,32 +1,19 @@
 <template>
-  <editor-content
-    class="umo-editor-content"
-    :class="{
-      'show-bookmark': page.showBookmark,
-      'show-line-number': page.showLineNumber,
-      'format-painter': editor?.view?.painter?.enabled,
-      'is-empty': editor?.isEmpty && editor?.state.doc.childCount <= 1,
-      'is-readonly': !editor?.editable,
-      'show-model': assistant,
-    }"
-    :editor="editor"
-    :style="{
+  <editor-content class="umo-editor-content" :class="{
+    'show-bookmark': page.showBookmark,
+    'show-line-number': page.showLineNumber,
+    'format-painter': editor?.view?.painter?.enabled,
+    'is-empty': editor?.isEmpty && editor?.state.doc.childCount <= 1,
+    'is-readonly': !editor?.editable,
+    'show-model': assistant,
+  }" :editor="editor" :style="{
       lineHeight: defaultLineHeight,
-    }"
-    :spellcheck="
-      options.document?.enableSpellcheck && $document.enableSpellcheck
-    "
-  />
-  <template
-    v-if="editor && !destroyed && !page.preview?.enabled && editor.isEditable"
-  >
-    <menus-context-block
-      v-if="options.document?.enableBlockMenu && page.zoomLevel === 100"
-    />
-    <menus-bubble
-      v-if="options.document?.enableBubbleMenu"
-      v-show="!editor?.view?.painter?.enabled && !editor?.isEmpty"
-    >
+    }" :spellcheck="options.document?.enableSpellcheck && $document.enableSpellcheck
+      " />
+  <template v-if="editor && !destroyed && !page.preview?.enabled && editor.isEditable">
+    <menus-context-block v-if="options.document?.enableBlockMenu && page.zoomLevel === 100" />
+    <menus-bubble v-if="options.document?.enableBubbleMenu"
+      v-show="!editor?.view?.painter?.enabled && !editor?.isEmpty">
       <template #bubble_menu="props">
         <slot name="bubble_menu" v-bind="props" />
       </template>
@@ -35,13 +22,15 @@
       </template>
     </menus-bubble>
     <menus-bubble-link v-if="editor?.storage?.link?.edit" />
+    <!-- 扩展配置弹修正弹框 -->
+    <SuggestionToolTip :element="tooltipElement" :editor="editor" v-if="editor" />
   </template>
 </template>
 
 <script setup lang="ts">
 import { Editor, EditorContent } from '@tiptap/vue-3'
-
-import { getDefaultExtensions, inputAndPasteRules } from '@/extensions'
+import SuggestionToolTip from '@/extensions/documentSuggest/SuggestionTooltip.vue'
+import { getDefaultExtensions, tooltipElement, inputAndPasteRules } from '@/extensions'
 import { contentTransform } from '@/utils/content-transform'
 import { addHistory } from '@/utils/history-record'
 import { loadResource } from '@/utils/load-resource'

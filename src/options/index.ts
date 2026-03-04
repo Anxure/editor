@@ -91,6 +91,8 @@ const defaultOptions: UmoEditorOptions = {
     },
   },
   ai: defaultAiOptions,
+  // 增加纠错扩展配置
+  documentSuggestConfig: null,
   echarts: {
     mode: 1,
     renderImage: false,
@@ -738,6 +740,60 @@ const ojbectSchema = new ObjectSchema({
           },
         },
       },
+    },
+  },
+  // 纠错扩展配置
+  documentSuggestConfig: {
+    merge: 'replace',
+    required: false,
+    validate(value: unknown) {
+      if (value === null || value === undefined) {
+        return
+      }
+      if (!isRecord(value)) {
+        throw new Error('Key "documentSuggestConfig": must be null or an object.')
+      }
+      if (
+        'backendUrl' in value &&
+        value.backendUrl !== undefined &&
+        value.backendUrl !== null &&
+        !isString(value.backendUrl)
+      ) {
+        throw new Error(
+          'Key "documentSuggestConfig": Key "backendUrl" must be a string.',
+        )
+      }
+      if (
+        'rules' in value &&
+        value.rules !== undefined &&
+        value.rules !== null &&
+        !Array.isArray(value.rules)
+      ) {
+        throw new Error(
+          'Key "documentSuggestConfig": Key "rules" must be an array.',
+        )
+      }
+      // 这里async 好像isFunction判断不了
+      if (
+        'fetchSuggestions' in value &&
+        value.fetchSuggestions !== undefined &&
+        value.fetchSuggestions !== null &&
+        typeof (value.fetchSuggestions) !== 'function'
+      ) {
+        throw new Error(
+          'Key "documentSuggestConfig": Key "fetchSuggestions" must be a function.',
+        )
+      }
+      if (
+        'getCustomSuggestionDecoration' in value &&
+        value.getCustomSuggestionDecoration !== undefined &&
+        value.getCustomSuggestionDecoration !== null &&
+        !isFunction(value.getCustomSuggestionDecoration)
+      ) {
+        throw new Error(
+          'Key "documentSuggestConfig": Key "getCustomSuggestionDecoration" must be a function.',
+        )
+      }
     },
   },
   echarts: {
