@@ -372,7 +372,9 @@ export const DocumentSuggest = Extension.create({
                     continue;
                 }
 
-                const isSelected = selection.from >= range.from && selection.to <= range.to;
+                // 失焦时不认为是“选中”，避免 tooltip 在编辑器 blur 后依然保持打开
+                const hasFocus = this.editor?.view?.hasFocus?.() ?? true;
+                const isSelected = hasFocus && selection.from >= range.from && selection.to <= range.to;
 
                 const base: Decoration[] = [
                     Decoration.inline(range.from, range.to, {
@@ -475,7 +477,18 @@ export const DocumentSuggest = Extension.create({
                 props: {
                     decorations: (state) => {
                         return pluginKey.getState(state);
-                    }
+                    },
+                    // focus 时如果光标位置没变化，不会触发 selectionSet，因此 tooltip 不会自动恢复
+                    // 这里在 focus 主动触发一次 decorations 重建，让 tooltip 能按当前 selection 重新显示
+                    handleDOMEvents: {
+                        focus: (view) => {
+                            const tr = view.state.tr.setMeta(pluginKey, {
+                                type: 'rebuildFromStorage',
+                            });
+                            view.dispatch(tr);
+                            return false;
+                        },
+                    },
                 },
             })
         ]

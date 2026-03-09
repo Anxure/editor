@@ -72,6 +72,15 @@ const editorInstance: Editor = new Editor({
   },
   parseOptions: options.value.document?.parseOptions,
   extensions: [...extensions, ...options.value.extensions],
+  onBlur({ event }: any) {
+    // 编辑器失焦时关闭建议弹框
+    // 但如果焦点是转移到建议弹框内部（比如点击“修复/拒绝”按钮），不要立刻关闭，否则会导致按钮点击失效
+    const relatedTarget = event?.relatedTarget as HTMLElement | null
+    if (relatedTarget?.closest?.('[data-suggestion-tooltip="true"]')) {
+      return
+    }
+    tooltipElement.value = null
+  },
   onUpdate({ editor }) {
     const throttleFn = useThrottleFn(() => {
       $document.value.content = editor.getHTML()

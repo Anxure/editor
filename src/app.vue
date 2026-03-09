@@ -244,8 +244,8 @@ const editorScrollToSuggestion = (from: number) => {
   editor?.commands.setTextSelection(from);
   const { node } = editor?.view.domAtPos(
     editor?.state.selection.anchor,
-  )
-    (node as HTMLElement).scrollIntoView({ behavior: 'smooth', block: 'center' })
+  );
+  (node as HTMLElement).scrollIntoView({ behavior: 'smooth', block: 'center' })
 }
 const handleApplySuggestion = (suggestion: any) => {
   const editor = editorRef.value?.useEditor?.()
@@ -311,7 +311,7 @@ const testOptions = $ref({
         id: 'RULE_GRAMMAR_PROBLEM',
         name: '语法性问题',
         description: '语法性问题，核心是找语句不通顺的，你需要把纠错后的文本返回到fixCommand的params中的text字段中',
-        severity: 'info',
+        severity: 'warning',
         fixCommand: {
           action: 'replaceText',
           params: {
@@ -323,7 +323,7 @@ const testOptions = $ref({
         id: 'RULE_GRAMMAR_PROBLEM',
         name: '错别字问题',
         description: '错别字问题，需要注意携带上text_pos的from和to字段',
-        severity: 'info',
+        severity: 'warning',
         fixCommand: {
           action: 'replaceText',
           params: {
@@ -363,14 +363,14 @@ const testOptions = $ref({
         }
         const payload = await resp.json();
         suggestions = (payload.data.suggestions || []);
-        return suggestions.map((item) => ({ ...item, handleStatus: 'todo' }));
+        return suggestions.map((item: any) => ({ ...item, handleStatus: 'todo' }));
       } else {
         console.log(doc);
         const targetList = [
           {
             "id": "82a46812-c389-4e0b-9aff-8cf30352d754",
             "message": "语法性问题，语句不通顺",
-            "rule_id": "RULE_GRAMMAR_PROBLEM",
+            "rule_id": "10",
             "appear_times": 1,
             "error_word": "本几构公关传媒部",
             "original_text_pos": {
@@ -390,7 +390,7 @@ const testOptions = $ref({
           {
             "id": "eeeadefd-f606-4da2-b67b-04998fe7cec0",
             "message": "语法性问题，语句不通顺",
-            "rule_id": "RULE_GRAMMAR_PROBLEM",
+            "rule_id": "10",
             "appear_times": 1,
             "error_word": "究简报",
             "original_text_pos": {
@@ -398,7 +398,7 @@ const testOptions = $ref({
               "to": 114
             },
             "text": "新闻媒体基于学术研究和观点讨论而对本研究简报的引用受到鼓励，但这种引用必须以不损害本研究机构的知识产权和商业利益为前提。新闻媒体对研究简报的引用应该获得本几构公关传媒部的许可，但究简报的观点不得对本研进行有悖原意的引用和修改。",
-            "severity": "info",
+            "severity": "warning",
             "fixCommand": {
               "action": "replaceText",
               "params": {
@@ -410,7 +410,7 @@ const testOptions = $ref({
           {
             "id": "b2dfdda4-a0b8-416c-88d9-00947e183dea",
             "message": "语法性问题，语句不通顺",
-            "rule_id": "RULE_GRAMMAR_PROBLEM",
+            "rule_id": "10",
             "appear_times": 1,
             "error_word": "本研",
             "original_text_pos": {
@@ -430,7 +430,7 @@ const testOptions = $ref({
           {
             "id": "67e8c315-2972-4c3e-927e-e2cab97e34ff",
             "message": "错别字问题",
-            "rule_id": "RULE_GRAMMAR_PROBLEM",
+            "rule_id": "9",
             "appear_times": 1,
             "error_word": "问字",
             "original_text_pos": {

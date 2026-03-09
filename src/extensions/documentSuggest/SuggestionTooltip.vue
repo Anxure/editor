@@ -3,14 +3,43 @@
         <teleport :to="element.element">
             <span :key="element.element" ref="reference" />
         </teleport>
-        <div v-if="isOpen" class="suggestion-tooltip-parent" ref="floating" :style="{...floatingStyles, zIndex: 100}">
+        <div
+          v-if="isOpen"
+          class="suggestion-tooltip-parent"
+          ref="floating"
+          data-suggestion-tooltip="true"
+          :style="{...floatingStyles, zIndex: 100}"
+        >
             <div class="suggestion-tooltip">
                 <div class="top">
-                    <div :class="['replacement-option', suggestion.severity === 'error' ? 'error' : suggestion.severity === 'warning' ? 'warning' : 'info']"
-                        :message="suggestion.message">{{ suggestion.message }}</div>
+                    <t-popup
+                      :attach="popupAttach"
+                      trigger="hover"
+                      placement="left"
+                      :disabled="!suggestion?.message"
+                    >
+                      <div
+                        :class="[
+                          'replacement-option',
+                          'suggestion-message',
+                          suggestion.severity === 'error'
+                            ? 'error'
+                            : suggestion.severity === 'warning'
+                              ? 'warning'
+                              : 'info',
+                        ]"
+                      >
+                      {{ suggestion.message }}
+                      </div>
+                      <template #content>
+                        <div class="suggestion-message-popup">
+                          {{ suggestion.message }}
+                        </div>
+                      </template>
+                    </t-popup>
                     <div class="button-group">
                         <button @click="applySuggestion(suggestion.id)">修复</button>
-                        <button class="destructive" @click="rejectSuggestion(suggestion.id)">拒绝</button>
+                        <button class="destructive" @click="rejectSuggestion(suggestion.id)">忽略</button>
                     </div>
                 </div>
                 <div class="bottom">
@@ -38,6 +67,10 @@ const props = defineProps({
 const reference = ref(null)
 const floating = ref(null)
 const suggestion = computed(() => props.element?.suggestion)
+const popupAttach = computed(() => {
+    const container = props.editor?.storage?.container
+    return container ? `${container} .umo-zoomable-container` : 'body'
+})
 const isOpen = computed(() =>
     Boolean(props.element && props.element.suggestion && suggestion?.value?.id)
 )
@@ -99,8 +132,18 @@ const rejectSuggestion = (suggestionId: string) => {
     padding: .5rem 1rem
 }
 
-.suggestion-tooltip .top .replacement-option {
-    padding: .34375rem 0
+.suggestion-message {
+    display: -webkit-box;
+    line-clamp: 2;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    word-break: break-word;
+}
+
+.suggestion-message-popup {
+    max-width: 360px;
 }
 
 
@@ -109,7 +152,7 @@ const rejectSuggestion = (suggestionId: string) => {
     font-size: 14px;
     font-weight: 400;
     color: var(--black);
-    margin-bottom: .34375rem
+    margin-bottom: 10px;
 }
 
 .suggestion-tooltip .top .replacement-option .text .add-text {
