@@ -10,8 +10,7 @@
           <button @click="handleFullTextCorrection">纠错</button>
         </div>
       </div>
-      <umo-editor v-else ref="editorRef" v-bind="options" @exportWord="handleExportWord"
-        @customSaveContent="handleCustomSaveContent">
+      <umo-editor v-else ref="editorRef" v-bind="options" @exportWord="handleExportWord" @customSaveContent="handleCustomSaveContent">
         <template #paragraph_left_menu="props">
           <!-- <umo-menu-button>1111</umo-menu-button> -->
         </template>
@@ -117,7 +116,7 @@ const options = $ref({
     { id: 'testuser', label: '测试用户' },
   ],
   // https://dev.umodoc.com/cn/docs/options/extensions#disableextensions
-  disableExtensions: ['file'],
+  disableExtensions: ['file', 'full-text-correction'],
   async onSave(content: string, page: number, document: { content: string }) {
     localStorage.setItem('document.content', document.content)
     return new Promise((resolve, reject) => {
