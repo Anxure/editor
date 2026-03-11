@@ -18,12 +18,13 @@ export interface Suggestion {
      * - { from, to }：表示在对应 text 节点内部的局部区间（基于字符偏移）
      * 如果为空，则等同于 'full'
      */
-    text_pos?: TextPosRange | null;
+    textPos?: TextPosRange | null;
     message: string;
-    rule_id: string;
+    ruleId: string;
     severity: 'error' | 'warning' | 'info';
     text: string;
-    original_hit_text: string;
+    originalHitText: string;
+    notNeedFix?: boolean; // 是否需要同步修复（某些场景不需要联动）
     /**
      * 后端返回的修复命令定义
      */
@@ -38,7 +39,8 @@ export interface Suggestion {
 export interface DocumentSuggestOptions {
     backendUrl?: string;
     rules?: any[];
-    fetchSuggestions?: (doc: any, rules: any[], editor: Editor) => Promise<Suggestion[]>;
+    // 返回 false 表示“本次不更新建议列表”（例如请求被取消）
+    fetchSuggestions?: (doc: any, rules: any[], editor: Editor) => Promise<Suggestion[] | false>;
     /**
      * 自定义高亮装饰（比如挂载 tooltip 容器）
      */
@@ -74,6 +76,14 @@ declare module '@tiptap/core' {
             rejectAllSuggestions: () => ReturnType;
             setSuggestionRules: (rules: any[]) => ReturnType;
             rejectSuggestion: (id: string) => ReturnType;
+            /**
+             * 触发某条建议的“闪动”效果，用于从外部面板指向对应文档位置
+             */
+            flashSuggestion: (id: string) => ReturnType;
+            /**
+             * 指向某条建议所在位置：滚动到视图中，并在到达后触发闪动效果
+             */
+            pointSuggestion: (id: string) => ReturnType;
         };
     }
 }
@@ -86,10 +96,10 @@ function getSuggestionRange(params: {
     suggestion: Suggestion;
 }): { from: number; to: number } | null {
     const { doc, suggestion } = params;
-    if (!suggestion.text_pos) {
+    if (!suggestion.textPos) {
         return null;
     }
-    return suggestion.text_pos || { from: 0, to: 0 };
+    return suggestion.textPos || { from: 0, to: 0 };
 }
 const documentSuggestPluginKey = new PluginKey('documentSuggest');
 
@@ -109,6 +119,8 @@ export const DocumentSuggest = Extension.create({
             isLoading: false,
             error: null as any,
             suggestions: [] as Suggestion[],
+            // 用于触发某条建议的“闪动”效果
+            flashId: null as string | null,
         };
     },
     addCommands() {
@@ -137,7 +149,7 @@ export const DocumentSuggest = Extension.create({
                         docJson.push({
                             type: 'text',
                             text: node.text,
-                            original_text_pos: {
+                            originalTextPos: {
                                 from: pos,
                                 to: pos + node.nodeSize,
                             },
@@ -150,7 +162,7 @@ export const DocumentSuggest = Extension.create({
                 // docJson.content = docJson.content?.filter((node: any) => detectionNodeTypes.includes(node.type) && node.content);
                 (async () => {
                     try {
-                        let suggestions: Suggestion[] = [];
+                        let suggestions: Suggestion[] | false = [];
                         if (this.options.fetchSuggestions) {
                             suggestions = await this.options.fetchSuggestions(docJson, rules, editor);
                         } else {
@@ -176,6 +188,10 @@ export const DocumentSuggest = Extension.create({
                             type: 'rebuildFromStorage',
                             isChangeSuggestions: true
                         });
+                        // 如果取消了则不触发
+                        if (typeof suggestions === 'boolean' && !suggestions) {
+                            return;
+                        }
                         editor.view.dispatch(tr)
 
                     } catch (error) {
@@ -254,29 +270,27 @@ export const DocumentSuggest = Extension.create({
                 editor.view.dispatch(tr);
                 return execFlag;
             },
-            applyAllSuggestions: () => ({ editor }) => {
+            applyAllSuggestions: () => ({ editor, chain }) => {
                 const storage = this.storage;
 
                 // 简单顺序执行，执行前实时根据 node_id + text_index 计算位置
                 for (const s of [...storage.suggestions]) {
                     const range = getSuggestionRange({ doc: editor.state.doc, suggestion: s });
-                    if (!range) continue;
+                    if (!range || range.from >= range.to) continue;
 
                     const fix = s.fixCommand;
                     const action = fix?.action;
                     const params = fix?.params || {};
                     if (!action) continue;
 
-                    const chain = editor.chain().focus();
-
                     switch (action) {
                         case 'setHeading': {
                             const level = (Number(params.level) || 1) as any;
-                            chain.setTextSelection(range).setHeading({ level }).run();
+                            chain().focus().setTextSelection(range).setHeading({ level }).run();
                             break;
                         }
                         case 'resetTextStyle': {
-                            chain
+                            chain().focus()
                                 .setTextSelection(range)
                                 .unsetColor()
                                 .unsetMark?.('backgroundColor')
@@ -285,7 +299,7 @@ export const DocumentSuggest = Extension.create({
                         }
                         case 'replaceText': {
                             const text = params.text ?? '';
-                            chain.insertContentAt(range, text).run();
+                            chain().focus().insertContentAt(range, text).run();
                             break;
                         }
                         default:
@@ -294,7 +308,7 @@ export const DocumentSuggest = Extension.create({
                 }
                 storage.suggestions = storage.suggestions.map((s: Suggestion) => ({
                     ...s,
-                    handleStatus: 'accepted'
+                    handleStatus: s.notNeedFix ? s.handleStatus : 'accepted' // 特殊场景处理
                 }));
                 const tr = editor.state.tr.setMeta(documentSuggestPluginKey, {
                     type: 'rebuildFromStorage',
@@ -332,7 +346,59 @@ export const DocumentSuggest = Extension.create({
                 });
                 editor.view.dispatch(tr);
                 return true;
-            }
+            },
+            flashSuggestion: (id: string) => ({ editor }) => {
+                const storage = this.storage;
+                const target = storage.suggestions.find((s: Suggestion) => s.id === id);
+                if (!target) {
+                    return false;
+                }
+                // 记录需要闪动的 suggestion id
+                storage.flashId = id;
+                // 触发一次 DecorationSet 重建，会在 buildDecorations 中为该 suggestion 添加动画类
+                const tr = editor.state.tr.setMeta(documentSuggestPluginKey, {
+                    type: 'rebuildFromStorage',
+                    isChangeSuggestions: false,
+                });
+                editor.view.dispatch(tr);
+                return true;
+            },
+            pointSuggestion: (id: string) => ({ editor }) => {
+                const storage = this.storage;
+                const target = storage.suggestions.find((s: Suggestion) => s.id === id);
+                if (!target) {
+                    return false;
+                }
+                const range = getSuggestionRange({ doc: editor.state.doc, suggestion: target });
+                if (!range) {
+                    return false;
+                }
+
+                // 1. 聚焦并选中对应位置
+                editor
+                    .chain()
+                    .focus()
+                    .setTextSelection(range)
+                    .run();
+
+                // 2. 滚动到视图中间
+                try {
+                    const { node } = editor.view.domAtPos(editor.state.selection.anchor);
+                    (node as HTMLElement).scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'center',
+                    });
+                } catch (e) {
+                    // domAtPos 失败时忽略滚动错误
+                }
+
+                // 3. 滚动触发后，再触发一次闪动效果（稍微延迟，避免与滚动竞争）
+                window.setTimeout(() => {
+                    editor.commands.flashSuggestion(id);
+                }, 150);
+
+                return true;
+            },
         }
     },
     addProseMirrorPlugins() {
@@ -376,9 +442,14 @@ export const DocumentSuggest = Extension.create({
                 const hasFocus = this.editor?.view?.hasFocus?.() ?? true;
                 const isSelected = hasFocus && selection.from >= range.from && selection.to <= range.to;
 
+                const isFlashing = this.storage.flashId && this.storage.flashId === s.id;
                 const base: Decoration[] = [
                     Decoration.inline(range.from, range.to, {
-                        class: `ai-suggestion ai-suggestion--${s.severity}`,
+                        class: [
+                            'ai-suggestion',
+                            `ai-suggestion--${s.severity}`,
+                            isFlashing ? 'ai-suggestion--flash' : '',
+                        ].filter(Boolean).join(' '),
                         'data-suggestion-id': s.id,
                     }),
                 ];
@@ -388,7 +459,7 @@ export const DocumentSuggest = Extension.create({
                         allSuggestions: todoSuggestions,
                         range,
                         isSelected,
-                        ruleTitle: getRuleText(s.rule_id),
+                        ruleTitle: getRuleText(s.ruleId),
                         getDefaultDecorations: () => base,
                     });
                     if (Array.isArray(extra)) {
@@ -400,6 +471,10 @@ export const DocumentSuggest = Extension.create({
                 } else {
                     decorations.push(...base);
                 }
+            }
+            // 本轮构建完成后，清除 flashId，方便下次重新触发动画
+            if (this.storage.flashId) {
+                this.storage.flashId = null;
             }
             return DecorationSet.create(doc, decorations);
         };
@@ -427,13 +502,13 @@ export const DocumentSuggest = Extension.create({
 
                             // 映射所有待显示的建议坐标
                             newSuggestions = this.storage.suggestions.map(s => {
-                                if (s.handleStatus !== 'todo' || s.text_pos === undefined) {
+                                if (s.handleStatus !== 'todo' || s.textPos === undefined || s.notNeedFix) {
                                     return s;
                                 }
 
                                 // ✅ 传入旧坐标，生成新坐标
-                                const newFrom = mapping.map(s.text_pos?.from ?? 0, 1);
-                                const newTo = mapping.map(s.text_pos?.to ?? 0, -1);
+                                const newFrom = mapping.map(s.textPos?.from ?? 0, 1);
+                                const newTo = mapping.map(s.textPos?.to ?? 0, -1);
                                 console.log(newFrom, newTo);
 
                                 let isInvalid = false;
@@ -441,9 +516,9 @@ export const DocumentSuggest = Extension.create({
                                     isInvalid = true; // 范围塌陷
                                 } else {
                                     // 可选：进行文本内容比对，确保用户不是只删除了部分导致错位
-                                    // 如果用户修改了文字，original_hit_text 就不匹配了
+                                    // 如果用户修改了文字，originalHitText 就不匹配了
                                     const currentText = newState.doc.textBetween(newFrom, newTo);
-                                    if (s.original_hit_text && currentText !== s.original_hit_text) {
+                                    if (s.originalHitText && currentText !== s.originalHitText) {
                                         isInvalid = true; // 内容被用户修改，不再匹配原始错误
                                     }
                                 }
@@ -455,12 +530,12 @@ export const DocumentSuggest = Extension.create({
                                     return {
                                         ...s,
                                         handleStatus: 'ignored', // 关键：改变状态
-                                        text_pos: { from: newFrom, to: newTo } // 保留最后的位置供参考，虽然不会再渲染
+                                        textPos: { from: newFrom, to: newTo } // 保留最后的位置供参考，虽然不会再渲染
                                     };
                                 }
                                 return {
                                     ...s,
-                                    text_pos: {
+                                    textPos: {
                                         from: newFrom,
                                         to: newTo
                                     }

@@ -12,7 +12,7 @@
         >
             <div class="suggestion-tooltip">
                 <div class="top">
-                    <t-popup
+                    <t-tooltip
                       :attach="popupAttach"
                       trigger="hover"
                       placement="left"
@@ -36,7 +36,7 @@
                           {{ suggestion.message }}
                         </div>
                       </template>
-                    </t-popup>
+                    </t-tooltip>
                     <div class="button-group">
                         <button @click="applySuggestion(suggestion.id)">修复</button>
                         <button class="destructive" @click="rejectSuggestion(suggestion.id)">忽略</button>

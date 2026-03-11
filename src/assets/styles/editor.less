@@ -34,6 +34,18 @@
   }
 
   .umo-editor {
+    @keyframes ai-suggestion-flash {
+      0%,
+      100% {
+        background-color: transparent;
+      }
+
+      25%,
+      75% {
+        background-color: rgba(255, 255, 0, 0.35);
+      }
+    }
+
     outline: none;
     counter-reset: title;
     color: var(--umo-content-text-color);
@@ -124,6 +136,10 @@
       &--info {
         border-bottom: 2px solid #0979E8;
         margin-bottom: -2px;
+      }
+
+      &--flash {
+        animation: ai-suggestion-flash 0.5s ease-in-out 2;
       }
     }
   }

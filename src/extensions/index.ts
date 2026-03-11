@@ -305,7 +305,6 @@ export const getDefaultExtensions = ({
         return decorations;
       },
     }),
-    NodeId
   ]
 
   // 合并扩展

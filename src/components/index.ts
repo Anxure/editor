@@ -1,7 +1,7 @@
 import 'virtual:svg-icons-register'
 
 import type { UmoEditorOptions } from '@/types'
-
+import { useEditorStorage } from '@/hooks/useEditorStrorage'
 import UmoEditor from './index.vue'
 import UmoMenuButton from './menus/button.vue'
 import UmoDialog from './modal.vue'
@@ -22,4 +22,6 @@ export {
   UmoTooltip,
   useUmoEditor,
   UmoViewer,
+  // 添加一些hook导出
+  useEditorStorage,
 }

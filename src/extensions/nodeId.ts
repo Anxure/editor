@@ -1,4 +1,4 @@
-// extensions/nodeId.ts
+// extensions/nodeId.ts 已废弃，内部增加了监听时间，如果启用了协同会导致位置错乱问题
 import { Extension } from '@tiptap/core'
 import { Plugin, PluginKey } from '@tiptap/pm/state'
 import { nanoid } from 'nanoid'
