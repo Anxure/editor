@@ -37,32 +37,46 @@ export default Extension.create({
           indent: {
             default: null,
             renderHTML: (attributes) => {
-              if (!attributes.indent) {
+              const { indent } = attributes
+              const { minLevel } = this.options
+              if (!indent || indent <= minLevel) {
                 return {}
               }
-              if (attributes.indent > this.options.minLevel) {
-                return {
-                  class: `${classAttrPrefix}${attributes.indent}`,
-                }
+              return {
+                style: `text-indent: ${indent * 2}em;`,
               }
-              return {}
             },
+            // renderHTML: (attributes) => {
+            //   if (!attributes.indent) {
+            //     return {}
+            //   }
+            //   if (attributes.indent > this.options.minLevel) {
+            //     return {
+            //       class: `${classAttrPrefix}${attributes.indent}`,
+            //     }
+            //   }
+            //   return {}
+            // },
             parseHTML: (element) => {
-              let indentClassName = ''
-              for (const className of element.classList) {
-                if (className.startsWith(classAttrPrefix)) {
-                  indentClassName = className
-                  break
-                }
+              const { textIndent } = element.style
+
+              if (!textIndent) {
+                return null
               }
-              if (indentClassName) {
-                const level = Number.parseInt(
-                  indentClassName.slice(classAttrPrefix.length),
-                  10,
-                )
-                return level && level > this.options.minLevel ? level : null
+              const match = textIndent.match(/([\d.]+)/)
+              if (!match) {
+                return null
               }
-              return null
+              const value = Number.parseFloat(match[1])
+              if (Number.isNaN(value)) {
+                return null
+              }
+              const base = Number.parseFloat(this.options.indentSize)
+              if (!base) {
+                return null
+              }
+              const level = Math.round(value / base)
+              return level > this.options.minLevel ? level : null
             },
           },
         },
@@ -75,34 +89,26 @@ export default Extension.create({
       pos: number,
       delta: number,
     ) => {
-      const node = tr.doc.nodeAt(pos) ?? null
-      if (node) {
-        const nextLevel = (node.attrs.indent ?? 0) + delta
-        const { minLevel, maxLevel } = this.options
-        let indent = nextLevel
-        if (nextLevel < minLevel) {
-          indent = minLevel
-        } else if (nextLevel > maxLevel) {
-          indent = maxLevel
-        }
-        if (indent !== node.attrs.indent) {
-          const clonedAttrs = { ...node.attrs }
-          delete clonedAttrs.indent
-
-          const nodeAttrs =
-            indent > minLevel ? { ...clonedAttrs, indent } : clonedAttrs
-          return tr.setNodeMarkup(pos, node.type, nodeAttrs, node.marks)
-        }
+      const node = tr.doc.nodeAt(pos)
+      if (!node) return tr
+      const nextLevel = (node.attrs.indent || 0) + delta
+      const { minLevel, maxLevel } = this.options
+      let indent = nextLevel
+      if (nextLevel < minLevel) indent = minLevel
+      if (nextLevel > maxLevel) indent = maxLevel
+      if (indent !== node.attrs.indent) {
+        const attrs = { ...node.attrs }
+        delete attrs.indent
+        const nextAttrs = indent > minLevel ? { ...attrs, indent } : attrs
+        return tr.setNodeMarkup(pos, node.type, nextAttrs, node.marks)
       }
       return tr
     }
     const updateIndentLevel = (tr: Transaction, delta: number) => {
       const { doc, selection } = tr
       if (
-        doc &&
-        selection &&
-        (selection instanceof TextSelection ||
-          selection instanceof AllSelection)
+        selection instanceof TextSelection ||
+        selection instanceof AllSelection
       ) {
         const { from, to } = selection
         doc.nodesBetween(from, to, (node, pos) => {
@@ -117,29 +123,29 @@ export default Extension.create({
     }
     const applyIndent =
       (direction: number) =>
-      () =>
-      ({
-        tr,
-        state,
-        dispatch,
-        editor,
-      }: {
-        tr: Transaction
-        state: EditorState
-        dispatch: Dispatch
-        editor: Editor
-      }) => {
-        const { selection } = state
-        tr.setSelection(selection)
-        tr = updateIndentLevel(tr, direction)
-        if (tr.docChanged) {
-          if (isFunction(dispatch)) {
-            dispatch(tr)
+        () =>
+          ({
+            tr,
+            state,
+            dispatch,
+            editor,
+          }: {
+            tr: Transaction
+            state: EditorState
+            dispatch: Dispatch
+            editor: Editor
+          }) => {
+            const { selection } = state
+            tr.setSelection(selection)
+            tr = updateIndentLevel(tr, direction)
+            if (tr.docChanged) {
+              if (isFunction(dispatch)) {
+                dispatch(tr)
+              }
+              return true
+            }
+            return false
           }
-          return true
-        }
-        return false
-      }
     return {
       indent: applyIndent(1),
       outdent: applyIndent(-1),
