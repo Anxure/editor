@@ -134,7 +134,7 @@ export default defineConfig({
   css: cssConfig,
   build: buildConfig,
   esbuild: {
-    drop: ['debugger'],
+    // drop: ['debugger'],
   },
   resolve: {
     alias: {

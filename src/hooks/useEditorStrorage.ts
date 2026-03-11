@@ -41,10 +41,8 @@ export function useEditorStorage<T, R = T>(
           raw = (defaultValue as T) ?? (undefined as unknown as T)
         }
         const next = mapFn(raw)
-        console.log('next', next, 'prevValueCache', prevValueCache, 'isEqual', isEqual(prevValueCache, next))
         if (isEqual(prevValueCache, next)) return
           ; (valueRef.value as any) = next
-        console.log('valueRef', valueRef.value)
         prevValueCache = cloneDeep(next as any)
       }
 

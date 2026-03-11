@@ -137,25 +137,85 @@ export const DocumentSuggest = Extension.create({
         }
         return {
             loadSuggestions: () => ({ editor }) => {
+                const isDev = (import.meta as any)?.env?.DEV;
                 const storage = this.storage;
                 storage.isLoading = true;
                 storage.error = null;
+                const findNearestTextblock = (doc: any, pos: number) => {
+                    const $pos = doc.resolve(pos);
+                    for (let d = $pos.depth; d >= 0; d--) {
+                        const n = $pos.node(d);
+                        if (n?.isTextblock) {
+                            const nodePos = d === 0 ? 0 : $pos.before(d); // textblock 节点起点（绝对 pos）
+                            const contentStartPos = $pos.start(d); // textblock 内容起点（绝对 pos）
+                            return {
+                                node: n,
+                                depth: d,
+                                nodePos,
+                                contentStartPos,
+                            };
+                        }
+                    }
+                    return null;
+                };
                 // const docJson = editor.getJSON();
                 // console.log('docJson', docJson);
                 // console.log('docHtml', editor.getHTML());
-                const docJson: any[] = [];
-                editor.state.doc.descendants((node: any, pos: number) => {
-                    if (node.isText) {
-                        docJson.push({
-                            type: 'text',
-                            text: node.text,
-                            originalTextPos: {
-                                from: pos,
-                                to: pos + node.nodeSize,
-                            },
-                        });
+                /**
+                 * 生成给大模型/后端检测用的结构：
+                 * - 扁平化：每个 text span 一条记录（避免 blocks->inlines 的嵌套）
+                 * - originalTextPos 使用 ProseMirror 绝对坐标（从文档根起点开始计数）
+                 * - attrs：取最近的 textblock（heading/paragraph 等）节点 attrs，并合并 text marks 样式（驼峰 key）
+                 */
+                type DocTextSpan = {
+                    type: 'text';
+                    text: string;
+                    originalTextPos: { from: number; to: number };
+                    attrs: Record<string, any>;
+                };
+                const docJson: DocTextSpan[] = [];
+                const marksToStyleAttrs = (marks: any[] | null | undefined) => {
+                    const styleAttrs: Record<string, any> = {};
+                    for (const m of marks || []) {
+                        const type = m?.type?.name;
+                        if (type === 'bold') {
+                            styleAttrs.fontWeight = 'bold';
+                        }
+                        if (type === 'textStyle') {
+                            const a = m?.attrs || {};
+                            for (const [k, v] of Object.entries(a)) {
+                                if (v === null || v === undefined || v === '') continue;
+                                // textStyle 的 attrs 在 tiptap 通常就是驼峰（color/fontFamily/fontSize...）
+                                styleAttrs[String(k)] = v;
+                            }
+                        }
                     }
+                    return styleAttrs;
+                };
+                editor.state.doc.descendants((node: any, pos: number) => {
+                    if (!node?.isText || !node.text) return;
+
+                    const info = findNearestTextblock(editor.state.doc, pos);
+                    if (!info) return;
+
+                    // ProseMirror 绝对坐标：pos 是 text node 的起点
+                    // text node 的实际内容范围通常是 [pos, pos + text.length]
+                    // 这里用 length 更贴合“文本范围”，也更适合 textBetween 校验
+                    const from = pos;
+                    const to = pos + node.text.length;
+                    const styleAttrs = marksToStyleAttrs(node.marks);
+                    docJson.push({
+                        type: info.node.type.name === 'paragraph' ? 'text' : info.node.type.name,
+                        text: node.text,
+                        originalTextPos: { from, to },
+                        attrs: {
+                            ...(info.node.attrs || {}),
+                            ...styleAttrs,
+                        },
+                    });
                 });
+                console.log(docJson, 'docJson');
+                console.log(editor.getHTML(), 'editor.getHTML()');
                 // const detectionNodeTypes = ['heading', 'paragraph', 'listItem', 'list', 'blockquote', 'table', 'tableRow', 'tableCell'];
                 // 这里过滤第一层的自定义节点（仅保留一些特定节点）
                 const rules = this.options.rules || [];
@@ -182,16 +242,17 @@ export const DocumentSuggest = Extension.create({
                             const payload = await resp.json();
                             suggestions = (payload.data.suggestions || []) as Suggestion[];
                         }
-                        console.log('suggestions', suggestions);
+                        if (isDev) console.log('suggestions', suggestions);
+                        // 如果取消了则不触发
+                        if (typeof suggestions === 'boolean' && !suggestions) {
+                            return;
+                        }
                         storage.suggestions = suggestions;
                         const tr = editor.state.tr.setMeta(documentSuggestPluginKey, {
                             type: 'rebuildFromStorage',
                             isChangeSuggestions: true
                         });
-                        // 如果取消了则不触发
-                        if (typeof suggestions === 'boolean' && !suggestions) {
-                            return;
-                        }
+
                         editor.view.dispatch(tr)
 
                     } catch (error) {
@@ -402,6 +463,7 @@ export const DocumentSuggest = Extension.create({
         }
     },
     addProseMirrorPlugins() {
+        const isDev = (import.meta as any)?.env?.DEV;
         const pluginKey = documentSuggestPluginKey;
         // isChangeSuggestions - 是否修改了意见项（应用/拒绝的场景下，需要主动调用一次外部更新，关闭弹框，主要是处理最后一个关闭意见无法关闭弹框的场景）
         const buildDecorations = (state: EditorState, suggestions: Suggestion[], isChangeSuggestions?: boolean): DecorationSet => {
@@ -426,13 +488,13 @@ export const DocumentSuggest = Extension.create({
                 const rule = this.options.rules?.find((r: any) => r.id === ruleId);
                 return rule?.name || '';
             }
-            console.log(todoSuggestions);
+            if (isDev) console.log(todoSuggestions);
             for (const s of todoSuggestions) {
                 const range = getSuggestionRange({
                     doc,
                     suggestion: s,
                 });
-                console.log('range', range);
+                if (isDev) console.log('range', range);
                 if (!range) {
                     // 清空对应的option
                     continue;
@@ -463,7 +525,7 @@ export const DocumentSuggest = Extension.create({
                         getDefaultDecorations: () => base,
                     });
                     if (Array.isArray(extra)) {
-                        console.log(extra);
+                        if (isDev) console.log(extra);
                         decorations.push(...extra);
                     } else {
                         decorations.push(...base);
@@ -489,7 +551,6 @@ export const DocumentSuggest = Extension.create({
                     },
                     apply: (tr, old, oldState, newState) => {
                         let newSuggestions = this.storage.suggestions;
-
                         const meta = tr.getMeta(pluginKey);
                         // 显式要求：根据 storage 重建一次 DecorationSet
                         if (meta?.type === 'rebuildFromStorage') {
@@ -499,7 +560,6 @@ export const DocumentSuggest = Extension.create({
                         if (tr.docChanged || tr.selectionSet) {
                             let hasStatusChange = false; // 标记是否有状态变更
                             const mapping = tr.mapping;
-
                             // 映射所有待显示的建议坐标
                             newSuggestions = this.storage.suggestions.map(s => {
                                 if (s.handleStatus !== 'todo' || s.textPos === undefined || s.notNeedFix) {
@@ -509,7 +569,7 @@ export const DocumentSuggest = Extension.create({
                                 // ✅ 传入旧坐标，生成新坐标
                                 const newFrom = mapping.map(s.textPos?.from ?? 0, 1);
                                 const newTo = mapping.map(s.textPos?.to ?? 0, -1);
-                                console.log(newFrom, newTo);
+                                if (isDev) console.log(newFrom, newTo);
 
                                 let isInvalid = false;
                                 if (newFrom >= newTo) {
@@ -526,7 +586,7 @@ export const DocumentSuggest = Extension.create({
                                 // 🚨 如果失效，自动标记为 ignored
                                 if (isInvalid) {
                                     hasStatusChange = true;
-                                    console.log(`Suggestion ${s.id} invalidated by user edit. Marking as ignored.`);
+                                    if (isDev) console.log(`Suggestion ${s.id} invalidated by user edit. Marking as ignored.`);
                                     return {
                                         ...s,
                                         handleStatus: 'ignored', // 关键：改变状态
