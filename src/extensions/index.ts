@@ -304,6 +304,7 @@ export const getDefaultExtensions = ({
 
         return decorations;
       },
+      onSuggestionClick: options.value.documentSuggestConfig?.onSuggestionClick,
     }),
   ]
 

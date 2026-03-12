@@ -794,6 +794,17 @@ const ojbectSchema = new ObjectSchema({
           'Key "documentSuggestConfig": Key "getCustomSuggestionDecoration" must be a function.',
         )
       }
+
+      if (
+        'onSuggestionClick' in value &&
+        value.onSuggestionClick !== undefined &&
+        value.onSuggestionClick !== null &&
+        !isFunction(value.onSuggestionClick)
+      ) {
+        throw new Error(
+          'Key "documentSuggestConfig": Key "onSuggestionClick" must be a function.',
+        )
+      }
     },
   },
   echarts: {

@@ -275,6 +275,9 @@ const testOptions = $ref({
     content: '<p style="text-align: center;"><span style="font-family: &quot;Calibri Light&quot;; font-size: 16pt;">新闻媒体报道</span></p><p style="text-align: left;"><span style="font-family: Calibri; font-size: 12pt;">新闻媒体基于学术研究和观点讨论而对本研究简报的引用受到鼓励，但这种引用必须以</span><span style="font-family: Calibri; font-size: 15pt;">不损害本研究机构的知识产权和商业利益为前提。新闻媒体对研究简报的引用应该获得本几构公关传媒部的许可，但</span><span style="font-family: Calibri; font-size: 12pt;">究简报的观点不得对本研进行有悖原意的引用和修改。</span></p><p style="text-align: left;"><span style="font-family: Calibri; font-size: 12pt;">我是一段策试文字111，我是测试文字一段222</span></p><p><span style="font-family: Calibri; font-size: 12pt;">我是一段有错别字的问字</span></p><p><br></p><p></p>'
   },
   documentSuggestConfig: {
+    onSuggestionClick: (suggestion: any) => {
+      console.log('onSuggestionClick', suggestion)
+    },
     rules: [
       {
         id: 'RULE_TITLE_SIZE',

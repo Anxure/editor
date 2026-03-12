@@ -64,6 +64,10 @@ export interface DocumentSuggestOptions {
          */
         ruleTitle?: string;
         getDefaultDecorations?: () => Decoration[];
+        /**
+         * 点击建议区域回调
+         */
+        onSuggestionClick?: (suggestion: Suggestion) => void;
     }) => Decoration[];
 }
 
@@ -470,7 +474,7 @@ export const DocumentSuggest = Extension.create({
                 // 3. 滚动触发后，再触发一次闪动效果（稍微延迟，避免与滚动竞争）
                 window.setTimeout(() => {
                     editor.commands.flashSuggestion(id);
-                }, 150);
+                }, 300);
 
                 return true;
             },
@@ -636,6 +640,20 @@ export const DocumentSuggest = Extension.create({
                             });
                             view.dispatch(tr);
                             return false;
+                        },
+                        // 增加区域点击（如果是处于纠错的区域触发对外的点击回调）
+                        mousedown: (view, event) => {
+                            const target = event.target as HTMLElement | null;
+                            if(!target) return false;
+                            const el = target.closest?.('[data-suggestion-id]') as HTMLElement | null;
+                            if(!el) return false;
+                            const suggestionId = el.getAttribute('data-suggestion-id');
+                            if(!suggestionId) return false;
+                            const suggestion = this.storage.suggestions.find((s: Suggestion) => s.id === suggestionId);
+                            if(!suggestion) return false;
+                            // 触发回调
+                            this.options.onSuggestionClick?.(suggestion);
+                            return true;
                         },
                     },
                 },

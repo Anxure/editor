@@ -269,6 +269,7 @@ export interface UmoEditorOptions {
       range: { from: number; to: number }
       getDefaultDecorations: () => Decoration[]
     }) => Decoration[]
+    onSuggestionClick?: (suggestion: Suggestion) => void;
   },
   echarts?: EchartsOptions
   webPages?: WebPageItem[]
