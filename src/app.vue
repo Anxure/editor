@@ -4,11 +4,9 @@
 
       <!-- ykx测试纠错 -->
       <div v-if="isYkxDev" class="ykx-test-editor">
-        <div style="height: 500px;">
 
-          <umo-editor ref="editorRef" v-bind="testOptions">
-          </umo-editor>
-        </div>
+        <umo-editor ref="editorRef" v-bind="testOptions">
+        </umo-editor>
 
         <div class="test-panel">
           <button @click="handleFullTextCorrection">纠错</button>
@@ -274,9 +272,12 @@ const handleRejectAllSuggestions = () => {
 }
 const testOptions = $ref({
   document: {
-    content: '<p data-node-id="E0kcQn6a">新闻媒体基于学术研究和观点讨论而对本研究简报的引用受到鼓励，但这种引用必须以不损害本研究机构的知识产权和商业利益为前提。新闻媒体对研究简报的引用应该获得本几构公关传媒部的许可，但究简报的观点不得对本研进行有悖原意的引用和修改。</p><p data-node-id="dj2hicfm">我是一段策试文字111，我是测试文字一段222</p><p data-node-id="QszUBR5J">我是一段有错别字的问字</p><p data-node-id="QszUBR5J">我是一段有搓别字的问字1</p>'
+    content: '<p style="text-align: center;"><span style="font-family: &quot;Calibri Light&quot;; font-size: 16pt;">新闻媒体报道</span></p><p style="text-align: left;"><span style="font-family: Calibri; font-size: 12pt;">新闻媒体基于学术研究和观点讨论而对本研究简报的引用受到鼓励，但这种引用必须以</span><span style="font-family: Calibri; font-size: 15pt;">不损害本研究机构的知识产权和商业利益为前提。新闻媒体对研究简报的引用应该获得本几构公关传媒部的许可，但</span><span style="font-family: Calibri; font-size: 12pt;">究简报的观点不得对本研进行有悖原意的引用和修改。</span></p><p style="text-align: left;"><span style="font-family: Calibri; font-size: 12pt;">我是一段策试文字111，我是测试文字一段222</span></p><p><span style="font-family: Calibri; font-size: 12pt;">我是一段有错别字的问字</span></p><p><br></p><p></p>'
   },
   documentSuggestConfig: {
+    onSuggestionClick: (suggestion: any) => {
+      console.log('onSuggestionClick', suggestion)
+    },
     rules: [
       {
         id: 'RULE_TITLE_SIZE',
@@ -375,14 +376,70 @@ const testOptions = $ref({
         console.log(doc);
         const targetList = [
           {
+            "id": "validScopeMsgMap",
+            "message": "当前正文需为宋体\n当前正文字号需为小四",
+            "ruleId": null,
+            "appearTimes": null,
+            "errorWord": null,
+            "originalTextPos": null,
+            "severity": null,
+            "fixCommand": null,
+            "meta": null,
+            "text": null
+          },
+          {
             "id": "1",
-            "message": "错别字",
+            "message": "错别字规范：'本几构公关传媒部'应为'本机构公关传媒部'",
+            "ruleId": "9",
+            "appearTimes": "1",
+            "errorWord": "本几构公关传媒部",
+            "originalTextPos": {
+              "from": 47,
+              "to": 98
+            },
+            "severity": "warning",
+            "fixCommand": {
+              "action": "replaceText",
+              "params": {
+                "text": "本机构公关传媒部"
+              }
+            },
+            "meta": {
+              "section": "新闻媒体对研究简报的引用"
+            },
+            "text": "不损害本研究机构的知识产权和商业利益为前提。新闻媒体对研究简报的引用应该获得本几构公关传媒部的许可，但"
+          },
+          {
+            "id": "2",
+            "message": "语法性差错规范：'究简报的观点不得对本研进行有悖原意的引用和修改。'应为'研究简报的观点不得被有悖原意地引用和修改。'",
+            "ruleId": "10",
+            "appearTimes": "1",
+            "errorWord": "究简报的观点不得对本研进行有悖原意的引用和修改。",
+            "originalTextPos": {
+              "from": 98,
+              "to": 122
+            },
+            "severity": "warning",
+            "fixCommand": {
+              "action": "replaceText",
+              "params": {
+                "text": "研究简报的观点不得被有悖原意地引用和修改。"
+              }
+            },
+            "meta": {
+              "section": "研究简报的引用和修改"
+            },
+            "text": "究简报的观点不得对本研进行有悖原意的引用和修改。"
+          },
+          {
+            "id": "3",
+            "message": "错别字规范：'问字'应为'文字'",
             "ruleId": "9",
             "appearTimes": "1",
             "errorWord": "问字",
             "originalTextPos": {
-              "from": 141,
-              "to": 152
+              "from": 149,
+              "to": 160
             },
             "severity": "warning",
             "fixCommand": {
@@ -392,21 +449,9 @@ const testOptions = $ref({
               }
             },
             "meta": {
-              "section": "无"
+              "section": "测试文本"
             },
             "text": "我是一段有错别字的问字"
-          },
-          {
-            "id": "validScopeMsgMap",
-            "message": "各地动态内容字数需满足：≥300 且 <600 字",
-            "ruleId": null,
-            "appearTimes": null,
-            "errorWord": null,
-            "originalTextPos": null,
-            "severity": null,
-            "fixCommand": null,
-            "meta": null,
-            "text": null
           }
         ];
         const result = targetList.map((item) => {
