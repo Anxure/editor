@@ -56,7 +56,7 @@
     <div class="umo-viewer-close-button" @click="viewer = false">
       <t-icon name="close" size="24" />
     </div>
-    <umo-viewer v-bind="viewerOptions" @edit="viewer = false" @close="viewer = false" :showHeader="false" />
+    <!-- <umo-viewer v-bind="viewerOptions" @edit="viewer = false" @close="viewer = false" :showHeader="false" /> -->
   </div>
 </template>
 
