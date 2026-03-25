@@ -1154,12 +1154,12 @@ watch(
     }
     editor.value?.on('focus', () => {
       useHotkeys('esc', unsetFormatPainter)
-      useHotkeys('ctrl+s,command+s', () => {
-        if (options?.value?.toolbar?.showSaveLabel) {
-          void saveContent()
-          unsetFormatPainter()
-        }
-      })
+      // useHotkeys('ctrl+s,command+s', () => {
+      //   if (options?.value?.toolbar?.showSaveLabel) {
+      //     void saveContent()
+      //     unsetFormatPainter()
+      //   }
+      // })
       useHotkeys('ctrl+p,command+p', () => {
         print()
         unsetFormatPainter()
