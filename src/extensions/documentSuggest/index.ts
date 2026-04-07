@@ -158,17 +158,6 @@ export const DocumentSuggest = Extension.create({
             return suggestions;
         }
         return {
-            withIgnoreDirty: (fn: ((ctx: { editor: any; chain: any }) => any) | (() => any)) => ({ editor, chain }) => {
-                withIgnoreDirty(() => {
-                    if (typeof fn === 'function') {
-                        // 支持两种用法：
-                        // - editor.commands.withIgnoreDirty(() => editor.commands.xxx())
-                        // - editor.commands.withIgnoreDirty(({ editor, chain }) => chain().xxx().run())
-                        return (fn as any)({ editor, chain })
-                    }
-                })
-                return true
-            },
             loadSuggestions: () => ({ editor }) => {
                 const isDev = (import.meta as any)?.env?.DEV;
                 const storage = this.storage;
