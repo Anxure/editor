@@ -25,6 +25,7 @@ export interface Suggestion {
     text: string;
     originalHitText: string;
     notNeedFix?: boolean; // 是否需要同步修复（某些场景不需要联动）
+    btns: string[]; // 按钮数组 accepted/ignored/confirmed 修复/忽略/确认
     /**
      * 后端返回的修复命令定义
      */
@@ -125,9 +126,26 @@ export const DocumentSuggest = Extension.create({
             suggestions: [] as Suggestion[],
             // 用于触发某条建议的“闪动”效果
             flashId: null as string | null,
+            // ✅ 是否存在“用户手动改正文”（用于外部二次确认）
+            textDirty: false,
+            // ✅ 忽略 dirty（用于内部修复/一键修复等会改 doc 的操作）
+            // 用 depth 避免嵌套时 boolean 被过早恢复
+            ignoreDirtyDepth: 0,
         };
     },
     addCommands() {
+        const withIgnoreDirty = (fn: () => any) => {
+            const storage = this.storage
+            storage.ignoreDirtyDepth += 1
+            try {
+                return fn()
+            } finally {
+                // ✅ 延迟恢复：让同一次内部操作可能产生的后续 transaction 仍被忽略
+                queueMicrotask(() => {
+                    storage.ignoreDirtyDepth = Math.max(0, storage.ignoreDirtyDepth - 1)
+                })
+            }
+        }
         const updateSuggestion = (suggestions: Suggestion[], id: string, info: Record<string, any>) => {
             const sIndex = suggestions.findIndex((s: Suggestion) => s.id === id);
             const target = [...suggestions][sIndex];
@@ -140,9 +158,22 @@ export const DocumentSuggest = Extension.create({
             return suggestions;
         }
         return {
+            withIgnoreDirty: (fn: ((ctx: { editor: any; chain: any }) => any) | (() => any)) => ({ editor, chain }) => {
+                withIgnoreDirty(() => {
+                    if (typeof fn === 'function') {
+                        // 支持两种用法：
+                        // - editor.commands.withIgnoreDirty(() => editor.commands.xxx())
+                        // - editor.commands.withIgnoreDirty(({ editor, chain }) => chain().xxx().run())
+                        return (fn as any)({ editor, chain })
+                    }
+                })
+                return true
+            },
             loadSuggestions: () => ({ editor }) => {
                 const isDev = (import.meta as any)?.env?.DEV;
                 const storage = this.storage;
+                // ✅ 重新检测开始，认为“当前 suggestions 对应的正文快照”已对齐
+                storage.textDirty = false;
                 storage.isLoading = true;
                 storage.error = null;
                 const findNearestTextblock = (doc: any, pos: number) => {
@@ -223,6 +254,7 @@ export const DocumentSuggest = Extension.create({
                 // const detectionNodeTypes = ['heading', 'paragraph', 'listItem', 'list', 'blockquote', 'table', 'tableRow', 'tableCell'];
                 // 这里过滤第一层的自定义节点（仅保留一些特定节点）
                 const rules = this.options.rules || [];
+
                 // docJson.content = docJson.content?.filter((node: any) => detectionNodeTypes.includes(node.type) && node.content);
                 (async () => {
                     try {
@@ -295,36 +327,44 @@ export const DocumentSuggest = Extension.create({
                 }
 
                 let execFlag = true;
-                switch (action) {
-                    case 'setHeading': {
-                        const level = (Number(params.level) || 1) as any;
-                        chain().focus().setTextSelection(range).setHeading({ level }).run();
-                        break;
+                // ✅ 内部修复：忽略 dirty
+                storage.ignoreDirty = true;
+                withIgnoreDirty(() => {
+                    try {
+                        switch (action) {
+                            case 'setHeading': {
+                                const level = (Number(params.level) || 1) as any;
+                                chain().focus().setTextSelection(range).setHeading({ level }).run();
+                                break;
+                            }
+                            case 'resetTextStyle': {
+                                // 清除颜色 / 背景色，后续可根据需要扩展
+                                // TODO:看看是否需要特定action拆分开
+                                execFlag = chain()
+                                    .focus()
+                                    .setTextSelection(range)
+                                    .setColor('#000000')
+                                    .unsetMark('backgroundColor')
+                                    .run();
+                                break;
+                            }
+                            case 'replaceText': {
+                                const text = params.text ?? '';
+                                execFlag = chain()
+                                    .focus()
+                                    .insertContentAt(range, text)
+                                    .run();
+                                break;
+                            }
+                            default: {
+                                // 未知 action，暂不处理
+                                return false;
+                            }
+                        }
+                    } catch (error) {
+                        console.error(error);
                     }
-                    case 'resetTextStyle': {
-                        // 清除颜色 / 背景色，后续可根据需要扩展
-                        // TODO:看看是否需要特定action拆分开
-                        execFlag = chain()
-                            .focus()
-                            .setTextSelection(range)
-                            .setColor('#000000')
-                            .unsetMark('backgroundColor')
-                            .run();
-                        break;
-                    }
-                    case 'replaceText': {
-                        const text = params.text ?? '';
-                        execFlag = chain()
-                            .focus()
-                            .insertContentAt(range, text)
-                            .run();
-                        break;
-                    }
-                    default: {
-                        // 未知 action，暂不处理
-                        return false;
-                    }
-                }
+                });
 
                 updateSuggestion(storage.suggestions, id, { handleStatus: 'accepted' });
                 // 触发一次插件 state 重建 DecorationSet
@@ -337,41 +377,48 @@ export const DocumentSuggest = Extension.create({
             },
             applyAllSuggestions: () => ({ editor, chain }) => {
                 const storage = this.storage;
+                // ✅ 内部一键修复：忽略 dirty
+                storage.ignoreDirty = true;
+                withIgnoreDirty(() => {
+                    try {
+                        // 只处理当前仍为 todo 的建议，执行前实时根据 textPos 计算位置
+                        const todoList = storage.suggestions.filter((s: Suggestion) => s.handleStatus === 'todo');
+                        for (const s of todoList) {
+                            const range = getSuggestionRange({ doc: editor.state.doc, suggestion: s });
+                            if (!range || range.from >= range.to) continue;
 
-                // 只处理当前仍为 todo 的建议，执行前实时根据 textPos 计算位置
-                const todoList = storage.suggestions.filter((s: Suggestion) => s.handleStatus === 'todo');
-                for (const s of todoList) {
-                    const range = getSuggestionRange({ doc: editor.state.doc, suggestion: s });
-                    if (!range || range.from >= range.to) continue;
+                            const fix = s.fixCommand;
+                            const action = fix?.action;
+                            const params = fix?.params || {};
+                            if (!action) continue;
 
-                    const fix = s.fixCommand;
-                    const action = fix?.action;
-                    const params = fix?.params || {};
-                    if (!action) continue;
-
-                    switch (action) {
-                        case 'setHeading': {
-                            const level = (Number(params.level) || 1) as any;
-                            chain().focus().setTextSelection(range).setHeading({ level }).run();
-                            break;
+                            switch (action) {
+                                case 'setHeading': {
+                                    const level = (Number(params.level) || 1) as any;
+                                    chain().focus().setTextSelection(range).setHeading({ level }).run();
+                                    break;
+                                }
+                                case 'resetTextStyle': {
+                                    chain().focus()
+                                        .setTextSelection(range)
+                                        .unsetColor()
+                                        .unsetMark?.('backgroundColor')
+                                        .run();
+                                    break;
+                                }
+                                case 'replaceText': {
+                                    const text = params.text ?? '';
+                                    chain().focus().insertContentAt(range, text).run();
+                                    break;
+                                }
+                                default:
+                                    break;
+                            }
                         }
-                        case 'resetTextStyle': {
-                            chain().focus()
-                                .setTextSelection(range)
-                                .unsetColor()
-                                .unsetMark?.('backgroundColor')
-                                .run();
-                            break;
-                        }
-                        case 'replaceText': {
-                            const text = params.text ?? '';
-                            chain().focus().insertContentAt(range, text).run();
-                            break;
-                        }
-                        default:
-                            break;
+                    } catch (error) {
+                        console.error(error);
                     }
-                }
+                });
                 // 仅同步 todo 项的状态；notNeedFix 在“应用”场景下保持原状
                 storage.suggestions = storage.suggestions.map((s: Suggestion) => {
                     if (s.handleStatus !== 'todo') {
@@ -392,7 +439,7 @@ export const DocumentSuggest = Extension.create({
                 editor.view.dispatch(tr);
                 return true;
             },
-            rejectAllSuggestions: () => ({ editor }) => {
+            rejectOrConfirmAllSuggestions: () => ({ editor }) => {
                 const storage = this.storage;
                 // 只同步剩余 todo 项到 ignored（包括 notNeedFix）
                 storage.suggestions = storage.suggestions.map((s: Suggestion) => {
@@ -401,7 +448,8 @@ export const DocumentSuggest = Extension.create({
                     }
                     return {
                         ...s,
-                        handleStatus: 'ignored',
+                        // 这里confirmed和ignored是互斥的
+                        handleStatus: s.btns.includes('confirmed') ? 'confirmed' : 'ignored',
                     };
                 });
                 const tr = editor.state.tr.setMeta(documentSuggestPluginKey, {
@@ -420,6 +468,17 @@ export const DocumentSuggest = Extension.create({
             rejectSuggestion: (id: string) => ({ editor }) => {
                 const storage = this.storage;
                 updateSuggestion(storage.suggestions, id, { handleStatus: 'ignored' });
+                // 触发一次插件 state 重建 DecorationSet
+                const tr = editor.state.tr.setMeta(documentSuggestPluginKey, {
+                    type: 'rebuildFromStorage',
+                    isChangeSuggestions: true
+                });
+                editor.view.dispatch(tr);
+                return true;
+            },
+            confirmSuggestion: (id: string) => ({ editor }) => {
+                const storage = this.storage;
+                updateSuggestion(storage.suggestions, id, { handleStatus: 'confirmed' });
                 // 触发一次插件 state 重建 DecorationSet
                 const tr = editor.state.tr.setMeta(documentSuggestPluginKey, {
                     type: 'rebuildFromStorage',
@@ -466,7 +525,7 @@ export const DocumentSuggest = Extension.create({
                     (node as HTMLElement).scrollIntoView({
                         behavior: 'smooth',
                         block: 'center',
-                    }); 
+                    });
                 } catch (e) {
                     // domAtPos 失败时忽略滚动错误
                 }
@@ -577,6 +636,13 @@ export const DocumentSuggest = Extension.create({
                         if (meta?.type === 'rebuildFromStorage') {
                             return buildDecorations(newState, newSuggestions, meta.isChangeSuggestions);
                         }
+                        const ignoreDirty = (this.storage.ignoreDirtyDepth ?? 0) > 0
+                        if (tr.docChanged) {
+                            console.log(this.storage.ignoreDirtyDepth, tr.getMeta(pluginKey)?.type);
+                        }
+                        if (tr.docChanged && !ignoreDirty) {
+                            this.storage.textDirty = true
+                        }
                         // 文档或选区变化时，也根据当前 storage 重新计算一次
                         if (tr.docChanged || tr.selectionSet) {
                             let hasStatusChange = false; // 标记是否有状态变更
@@ -647,13 +713,13 @@ export const DocumentSuggest = Extension.create({
                         // 增加区域点击（如果是处于纠错的区域触发对外的点击回调）
                         mousedown: (view, event) => {
                             const target = event.target as HTMLElement | null;
-                            if(!target) return false;
+                            if (!target) return false;
                             const el = target.closest?.('[data-suggestion-id]') as HTMLElement | null;
-                            if(!el) return false;
+                            if (!el) return false;
                             const suggestionId = el.getAttribute('data-suggestion-id');
-                            if(!suggestionId) return false;
+                            if (!suggestionId) return false;
                             const suggestion = this.storage.suggestions.find((s: Suggestion) => s.id === suggestionId);
-                            if(!suggestion) return false;
+                            if (!suggestion) return false;
                             // 触发回调
                             this.options.onSuggestionClick?.(suggestion);
                             return true;

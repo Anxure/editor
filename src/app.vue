@@ -28,9 +28,11 @@
             </li>
 
           </ul>
+          <button @click="handleGetTextDirty">获取正文是否变动字段</button>
         </div>
       </div>
-      <umo-editor v-else ref="editorRef" v-bind="options" @exportWord="handleExportWord" @customSaveContent="handleCustomSaveContent">
+      <umo-editor v-else ref="editorRef" v-bind="options" @exportWord="handleExportWord"
+        @customSaveContent="handleCustomSaveContent">
         <template #paragraph_left_menu="props">
           <!-- <umo-menu-button>1111</umo-menu-button> -->
         </template>
@@ -44,7 +46,9 @@
         </template>
       </umo-editor>
 
-      <t-dialog v-model:visible="importHtmlDialogVisible" header="导入HTML测试" width="720px" :confirm-btn="{ content: '确定' }" :cancel-btn="{ content: '取消' }" @confirm="handleConfirmImportHtml" @close="handleCloseImportHtmlDialog" @cancel="handleCloseImportHtmlDialog">
+      <t-dialog v-model:visible="importHtmlDialogVisible" header="导入HTML测试" width="720px"
+        :confirm-btn="{ content: '确定' }" :cancel-btn="{ content: '取消' }" @confirm="handleConfirmImportHtml"
+        @close="handleCloseImportHtmlDialog" @cancel="handleCloseImportHtmlDialog">
         <t-textarea v-model="importHtmlValue" placeholder="在这里粘贴/输入 HTML..." :autosize="{ minRows: 14, maxRows: 26 }" />
       </t-dialog>
     </div>
@@ -278,7 +282,10 @@ const handleRejectAllSuggestions = () => {
   const editor = editorRef.value?.useEditor?.()
   editor?.chain().rejectAllSuggestions().run()
 }
-
+const handleGetTextDirty = () => {
+  const editor = editorRef.value?.useEditor?.()
+  console.log('getTextDirty', editor?.storage.documentSuggest.textDirty)
+}
 let importHtmlDialogVisible = $ref(false)
 let importHtmlValue = $ref('')
 const handleOpenImportHtmlDialog = () => {
@@ -403,56 +410,462 @@ const testOptions = $ref({
         suggestions = (payload.data.suggestions || []);
         return suggestions.map((item: any) => ({ ...item, handleStatus: 'todo' }));
       } else {
-        console.log(doc);
-        const targetList = [
-          {
-            "id": "validScopeMsgMap",
-            "message": "分析研究需包含现状、问题、意见建议三部分内容,当前缺失:现状、问题、意见建议",
-            "ruleId": null,
-            "appearTimes": null,
-            "errorWord": null,
-            "originalTextPos": null,
-            "severity": null,
-            "fixCommand": null,
-            "meta": null,
-            "text": null
-          },
-          {
-            "id": "1",
-            "message": "错别字：'问字' 应为 '文字'",
-            "ruleId": "9",
-            "appearTimes": "1",
-            "errorWord": "问字",
-            "originalTextPos": {
-              "from": 149,
-              "to": 160
-            },
-            "severity": "warning",
-            "fixCommand": {
-              "action": "replaceText",
-              "params": {
-                "text": "文字"
-              }
-            },
-            "meta": {
-              "section": "content"
-            },
-            "text": "我是一段有错别字的问字"
-          }
-        ];
-        const result = targetList.map((item) => {
-          const calcInfo = calculateErrorPosition(item);
-          return {
-            ...item,
-            originalHitText: calcInfo?.originalHitText ?? '',
-            notNeedFix: item.id === 'validScopeMsgMap', // 增加一个不需修复的标识
-            textPos: {
-              from: calcInfo?.from,
-              to: calcInfo?.to,
-            },
-            handleStatus: 'todo'
-          }
-        });
+        // console.log(doc);
+        // const targetList = [
+        //   {
+        //     "id": "validScopeMsgMap",
+        //     "message": "当前正文需为宋体\n当前正文字号需为小四",
+        //     "ruleId": null,
+        //     "appearTimes": null,
+        //     "errorWord": null,
+        //     "originalTextPos": null,
+        //     "severity": null,
+        //     "fixCommand": null,
+        //     "meta": null,
+        //     "text": null
+        //   },
+        //   {
+        //     "id": "1",
+        //     "message": "错别字：'路线图' 应为 '路线图'",
+        //     "ruleId": "9",
+        //     "appearTimes": "1",
+        //     "errorWord": "路线图",
+        //     "originalTextPos": {
+        //       "from": 145,
+        //       "to": 163
+        //     },
+        //     "severity": "warning",
+        //     "fixCommand": {
+        //       "action": "replaceText",
+        //       "params": {
+        //         "text": "路线图"
+        //       }
+        //     },
+        //     "meta": {
+        //       "section": "一、提前谋划部署，科学布局“路线图”"
+        //     },
+        //     "text": "一、提前谋划部署，科学布局“路线图”"
+        //   },
+        //   {
+        //     "id": "2",
+        //     "message": "错别字：'听心声' 应为 '听心声'",
+        //     "ruleId": "9",
+        //     "appearTimes": "1",
+        //     "errorWord": "听心声",
+        //     "originalTextPos": {
+        //       "from": 612,
+        //       "to": 630
+        //     },
+        //     "severity": "warning",
+        //     "fixCommand": {
+        //       "action": "replaceText",
+        //       "params": {
+        //         "text": "听心声"
+        //       }
+        //     },
+        //     "meta": {
+        //       "section": "三、深化多维访谈，问需于民“听心声”"
+        //     },
+        //     "text": "三、深化多维访谈，问需于民“听心声”"
+        //   },
+        //   {
+        //     "id": "1",
+        //     "message": "存在敏感词：国家",
+        //     "ruleId": "4",
+        //     "appearTimes": "1",
+        //     "errorWord": "国家",
+        //     "originalTextPos": {
+        //       "from": 31,
+        //       "to": 143
+        //     },
+        //     "severity": "warning",
+        //     "fixCommand": null,
+        //     "meta": null,
+        //     "text": "为准确掌握全省冬小麦返青期苗情动态，科学研判粮食生产形势，国家统计局山东调查总队抢抓农时、主动作为，紧扣冬小麦返青起身关键窗口期，在全省16市128个县（市、区），抽选1470个不同规模的种粮主体，全面开展苗情监测专题调研。"
+        //   },
+        //   {
+        //     "id": "1",
+        //     "message": "存在敏感词：路线",
+        //     "ruleId": "4",
+        //     "appearTimes": "1",
+        //     "errorWord": "路线",
+        //     "originalTextPos": {
+        //       "from": 145,
+        //       "to": 163
+        //     },
+        //     "severity": "warning",
+        //     "fixCommand": null,
+        //     "meta": null,
+        //     "text": "一、提前谋划部署，科学布局“路线图”"
+        //   },
+        //   {
+        //     "id": "1",
+        //     "message": "存在敏感词：计划",
+        //     "ruleId": "4",
+        //     "appearTimes": "1",
+        //     "errorWord": "计划",
+        //     "originalTextPos": {
+        //       "from": 165,
+        //       "to": 368
+        //     },
+        //     "severity": "warning",
+        //     "fixCommand": null,
+        //     "meta": null,
+        //     "text": "针对山东地域广阔、气候差异较大的特点，山东总队充分发挥粮食生产全过程监测机制优势，调研启动前周密准备、精准布局。一是精准把握调研窗口期。遵循冬小麦返青由南至北逐步推进的规律，合理安排调研时序，确保调研踩在节点上、落在关键处。二是科学制定实施方案。统筹考虑种植结构、地形地貌及历年生产情况，兼顾产粮大县与典型区域，细化完善调研计划与路线安排，明确调研内容、方法步骤和责任分工，推动调研工作靶向发力、有序推进。"
+        //   },
+        //   {
+        //     "id": "2",
+        //     "message": "存在敏感词：路线",
+        //     "ruleId": "4",
+        //     "appearTimes": "1",
+        //     "errorWord": "路线",
+        //     "originalTextPos": {
+        //       "from": 165,
+        //       "to": 368
+        //     },
+        //     "severity": "warning",
+        //     "fixCommand": null,
+        //     "meta": null,
+        //     "text": "针对山东地域广阔、气候差异较大的特点，山东总队充分发挥粮食生产全过程监测机制优势，调研启动前周密准备、精准布局。一是精准把握调研窗口期。遵循冬小麦返青由南至北逐步推进的规律，合理安排调研时序，确保调研踩在节点上、落在关键处。二是科学制定实施方案。统筹考虑种植结构、地形地貌及历年生产情况，兼顾产粮大县与典型区域，细化完善调研计划与路线安排，明确调研内容、方法步骤和责任分工，推动调研工作靶向发力、有序推进。"
+        //   },
+        //   {
+        //     "id": "1",
+        //     "message": "存在敏感词：进行",
+        //     "ruleId": "4",
+        //     "appearTimes": "1",
+        //     "errorWord": "进行",
+        //     "originalTextPos": {
+        //       "from": 391,
+        //       "to": 610
+        //     },
+        //     "severity": "warning",
+        //     "fixCommand": null,
+        //     "meta": null,
+        //     "text": "为全面提升苗情调研的客观性和精准度，总队坚持问题导向与目标导向相统一，推动现代信息技术与农业调查的深度融合。一是以遥感技术锁定重点区域。运用卫星遥感长势监测技术，对全省冬小麦返青情况进行宏观筛查，精准识别苗情异常地块，为实地调研提供靶向指引。二是以实地核查校准数据偏差。针对遥感监测发现的弱苗、受灾等疑似地块，组织专业力量开展现场核实，对比不同地块、品种、播期的苗情差异，科学评估整体长势，构建“天上看、地上察、数据核”的立体化监测体系。"
+        //   },
+        //   {
+        //     "id": "2",
+        //     "message": "存在敏感词：信息",
+        //     "ruleId": "4",
+        //     "appearTimes": "1",
+        //     "errorWord": "信息",
+        //     "originalTextPos": {
+        //       "from": 391,
+        //       "to": 610
+        //     },
+        //     "severity": "warning",
+        //     "fixCommand": null,
+        //     "meta": null,
+        //     "text": "为全面提升苗情调研的客观性和精准度，总队坚持问题导向与目标导向相统一，推动现代信息技术与农业调查的深度融合。一是以遥感技术锁定重点区域。运用卫星遥感长势监测技术，对全省冬小麦返青情况进行宏观筛查，精准识别苗情异常地块，为实地调研提供靶向指引。二是以实地核查校准数据偏差。针对遥感监测发现的弱苗、受灾等疑似地块，组织专业力量开展现场核实，对比不同地块、品种、播期的苗情差异，科学评估整体长势，构建“天上看、地上察、数据核”的立体化监测体系。"
+        //   },
+        //   {
+        //     "id": "1",
+        //     "message": "存在敏感词：多维",
+        //     "ruleId": "4",
+        //     "appearTimes": "1",
+        //     "errorWord": "多维",
+        //     "originalTextPos": {
+        //       "from": 612,
+        //       "to": 630
+        //     },
+        //     "severity": "warning",
+        //     "fixCommand": null,
+        //     "meta": null,
+        //     "text": "三、深化多维访谈，问需于民“听心声”"
+        //   },
+        //   {
+        //     "id": "1",
+        //     "message": "存在敏感词：管理",
+        //     "ruleId": "4",
+        //     "appearTimes": "2",
+        //     "errorWord": "管理",
+        //     "originalTextPos": {
+        //       "from": 632,
+        //       "to": 868
+        //     },
+        //     "severity": "warning",
+        //     "fixCommand": null,
+        //     "meta": null,
+        //     "text": "坚持既“察苗情”也“听民情”，采取“实地察看、现场走访、深入座谈、综合研判”的方式，与种植农户、辅助调查员、新型经营主体代表面对面交流。一是聚焦田间生产管理。详细了解返青水浇灌、化肥农药施用、生产投入成本及预期收益等情况，精准掌握农户在春季田间管理中面临的困难与问题。二是聚焦政策落地见效。结合农产品集贸市场价格、生产者价格及上年实产数据，与农业农村部门、农技专家深入座谈交流，详细了解惠农政策落实、农技服务、农资价格变动及农户种植意愿变化等情况，全方位研判粮食生产形势。"
+        //   },
+        //   {
+        //     "id": "2",
+        //     "message": "存在敏感词：政策",
+        //     "ruleId": "4",
+        //     "appearTimes": "2",
+        //     "errorWord": "政策",
+        //     "originalTextPos": {
+        //       "from": 632,
+        //       "to": 868
+        //     },
+        //     "severity": "warning",
+        //     "fixCommand": null,
+        //     "meta": null,
+        //     "text": "坚持既“察苗情”也“听民情”，采取“实地察看、现场走访、深入座谈、综合研判”的方式，与种植农户、辅助调查员、新型经营主体代表面对面交流。一是聚焦田间生产管理。详细了解返青水浇灌、化肥农药施用、生产投入成本及预期收益等情况，精准掌握农户在春季田间管理中面临的困难与问题。二是聚焦政策落地见效。结合农产品集贸市场价格、生产者价格及上年实产数据，与农业农村部门、农技专家深入座谈交流，详细了解惠农政策落实、农技服务、农资价格变动及农户种植意愿变化等情况，全方位研判粮食生产形势。"
+        //   },
+        //   {
+        //     "id": "3",
+        //     "message": "存在敏感词：价格",
+        //     "ruleId": "4",
+        //     "appearTimes": "3",
+        //     "errorWord": "价格",
+        //     "originalTextPos": {
+        //       "from": 632,
+        //       "to": 868
+        //     },
+        //     "severity": "warning",
+        //     "fixCommand": null,
+        //     "meta": null,
+        //     "text": "坚持既“察苗情”也“听民情”，采取“实地察看、现场走访、深入座谈、综合研判”的方式，与种植农户、辅助调查员、新型经营主体代表面对面交流。一是聚焦田间生产管理。详细了解返青水浇灌、化肥农药施用、生产投入成本及预期收益等情况，精准掌握农户在春季田间管理中面临的困难与问题。二是聚焦政策落地见效。结合农产品集贸市场价格、生产者价格及上年实产数据，与农业农村部门、农技专家深入座谈交流，详细了解惠农政策落实、农技服务、农资价格变动及农户种植意愿变化等情况，全方位研判粮食生产形势。"
+        //   },
+        //   {
+        //     "id": "4",
+        //     "message": "存在敏感词：代表",
+        //     "ruleId": "4",
+        //     "appearTimes": "1",
+        //     "errorWord": "代表",
+        //     "originalTextPos": {
+        //       "from": 632,
+        //       "to": 868
+        //     },
+        //     "severity": "warning",
+        //     "fixCommand": null,
+        //     "meta": null,
+        //     "text": "坚持既“察苗情”也“听民情”，采取“实地察看、现场走访、深入座谈、综合研判”的方式，与种植农户、辅助调查员、新型经营主体代表面对面交流。一是聚焦田间生产管理。详细了解返青水浇灌、化肥农药施用、生产投入成本及预期收益等情况，精准掌握农户在春季田间管理中面临的困难与问题。二是聚焦政策落地见效。结合农产品集贸市场价格、生产者价格及上年实产数据，与农业农村部门、农技专家深入座谈交流，详细了解惠农政策落实、农技服务、农资价格变动及农户种植意愿变化等情况，全方位研判粮食生产形势。"
+        //   },
+        //   {
+        //     "id": "1",
+        //     "message": "存在敏感词：信息",
+        //     "ruleId": "4",
+        //     "appearTimes": "2",
+        //     "errorWord": "信息",
+        //     "originalTextPos": {
+        //       "from": 890,
+        //       "to": 1091
+        //     },
+        //     "severity": "warning",
+        //     "fixCommand": null,
+        //     "meta": null,
+        //     "text": "在扎实掌握一手数据的基础上，总队深挖调研信息，强化定量分析与趋势研判，为保障粮食安全、促进农民增收提供坚实统计支撑。一是深化部门协同联动。加强与农业农村、气象、水利等部门的沟通协作，健全信息共享机制，会商研判生产形势。二是强化全程动态监测。紧盯小麦拔节、孕穗、灌浆等关键生育期，加密监测频次、扩大监测范围，持续跟踪苗情变化、气象灾害影响及病虫害发生发展情况，为粮食生产全过程提供更加精准的统计调查服务。"
+        //   },
+        //   {
+        //     "id": "2",
+        //     "message": "存在敏感词：安全",
+        //     "ruleId": "4",
+        //     "appearTimes": "1",
+        //     "errorWord": "安全",
+        //     "originalTextPos": {
+        //       "from": 890,
+        //       "to": 1091
+        //     },
+        //     "severity": "warning",
+        //     "fixCommand": null,
+        //     "meta": null,
+        //     "text": "在扎实掌握一手数据的基础上，总队深挖调研信息，强化定量分析与趋势研判，为保障粮食安全、促进农民增收提供坚实统计支撑。一是深化部门协同联动。加强与农业农村、气象、水利等部门的沟通协作，健全信息共享机制，会商研判生产形势。二是强化全程动态监测。紧盯小麦拔节、孕穗、灌浆等关键生育期，加密监测频次、扩大监测范围，持续跟踪苗情变化、气象灾害影响及病虫害发生发展情况，为粮食生产全过程提供更加精准的统计调查服务。"
+        //   }
+        // ]
+        // const result = targetList.map((item) => {
+        //   const calcInfo = calculateErrorPosition(item);
+        //   return {
+        //     ...item,
+        //     originalHitText: calcInfo?.originalHitText ?? '',
+        //     notNeedFix: item.id === 'validScopeMsgMap', // 增加一个不需修复的标识
+        //     btns: item.ruleId === '4' || item.id === 'validScopeMsgMap' ? ['confirmed'] : ['accepted', 'ignored'], // 传入按钮数组
+        //     textPos: {
+        //       from: calcInfo?.from,
+        //       to: calcInfo?.to,
+        //     },
+        //     handleStatus: 'todo'
+        //   }
+        // });
+        const result = [
+    {
+        "id": "leaderAuditDetection",
+        "message": "待检测文本的主标题为'新闻媒体报道'，而审批件文本的主标题为'每日经济第7569期审核报告'",
+        "ruleId": null,
+        "appearTimes": null,
+        "errorWord": null,
+        "originalTextPos": null,
+        "severity": "warning",
+        "fixCommand": null,
+        "meta": null,
+        "text": null,
+        "originalHitText": "",
+        "btns": [
+            "confirmed"
+        ],
+        "notNeedFix": true,
+        "handleStatus": "todo"
+    },
+    {
+        "id": "validScopeMsgMap",
+        "message": "当前正文需为宋体\n当前正文字号需为小四",
+        "ruleId": null,
+        "appearTimes": null,
+        "errorWord": null,
+        "originalTextPos": null,
+        "severity": "warning",
+        "fixCommand": null,
+        "meta": null,
+        "text": null,
+        "originalHitText": "",
+        "notNeedFix": true,
+        "btns": [
+            "confirmed"
+        ],
+        "textPos": {},
+        "handleStatus": "todo"
+    },
+    {
+        "id": "20dzisbf41m",
+        "message": "错别字：'本几构公关传媒部' 应为 '本机构公关传媒部'",
+        "ruleId": "9",
+        "appearTimes": "1",
+        "errorWord": "本几构公关传媒部",
+        "originalTextPos": {
+            "from": 47,
+            "to": 98
+        },
+        "severity": "warning",
+        "fixCommand": {
+            "action": "replaceText",
+            "params": {
+                "text": "本机构公关传媒部"
+            }
+        },
+        "meta": {
+            "section": "新闻媒体对研究简报的引用应该获得本几构公关传媒部的许可，但"
+        },
+        "text": "不损害本研究机构的知识产权和商业利益为前提。新闻媒体对研究简报的引用应该获得本几构公关传媒部的许可，但",
+        "originalHitText": "本几构公关传媒部",
+        "notNeedFix": false,
+        "btns": [
+            "accepted",
+            "ignored"
+        ],
+        "textPos": {
+            "from": 85,
+            "to": 93
+        },
+        "handleStatus": "todo"
+    },
+    {
+        "id": "8b5fuqafv3s",
+        "message": "错别字：'究简报的观点不得对本研进行有悖原意的引用和修改。' 应为 '研究简报的观点不得对本研究进行有悖原意的引用和修改。'",
+        "ruleId": "9",
+        "appearTimes": "1",
+        "errorWord": "究简报的观点不得对本研进行有悖原意的引用和修改。",
+        "originalTextPos": {
+            "from": 98,
+            "to": 122
+        },
+        "severity": "warning",
+        "fixCommand": {
+            "action": "replaceText",
+            "params": {
+                "text": "研究简报的观点不得对本研究进行有悖原意的引用和修改。"
+            }
+        },
+        "meta": {
+            "section": "究简报的观点不得对本研进行有悖原意的引用和修改。"
+        },
+        "text": "究简报的观点不得对本研进行有悖原意的引用和修改。",
+        "originalHitText": "究简报的观点不得对本研进行有悖原意的引用和修改。",
+        "notNeedFix": false,
+        "btns": [
+            "accepted",
+            "ignored"
+        ],
+        "textPos": {
+            "from": 98,
+            "to": 122
+        },
+        "handleStatus": "todo"
+    },
+    {
+        "id": "m7g2yhr47cw",
+        "message": "错别字：'我是一段有错别字的文字' 应为 '我是一段有正确字的文字'",
+        "ruleId": "9",
+        "appearTimes": "1",
+        "errorWord": "我是一段有错别字的文字",
+        "originalTextPos": {
+            "from": 149,
+            "to": 160
+        },
+        "severity": "warning",
+        "fixCommand": {
+            "action": "replaceText",
+            "params": {
+                "text": "我是一段有正确字的文字"
+            }
+        },
+        "meta": {
+            "section": "我是一段有错别字的文字"
+        },
+        "text": "我是一段有错别字的文字",
+        "originalHitText": "我是一段有错别字的文字",
+        "notNeedFix": false,
+        "btns": [
+            "accepted",
+            "ignored"
+        ],
+        "textPos": {
+            "from": 149,
+            "to": 160
+        },
+        "handleStatus": "todo"
+    },
+    {
+        "id": "qnuel6js3sw",
+        "message": "存在敏感词：进行",
+        "ruleId": "4",
+        "appearTimes": "1",
+        "errorWord": "进行",
+        "originalTextPos": {
+            "from": 98,
+            "to": 122
+        },
+        "severity": "warning",
+        "fixCommand": null,
+        "meta": null,
+        "text": "究简报的观点不得对本研进行有悖原意的引用和修改。",
+        "originalHitText": "进行",
+        "notNeedFix": false,
+        "btns": [
+            "confirmed"
+        ],
+        "textPos": {
+            "from": 109,
+            "to": 111
+        },
+        "handleStatus": "todo"
+    },
+    {
+        "id": "n3qqtow0y80",
+        "message": "存在敏感词：测试",
+        "ruleId": "4",
+        "appearTimes": "1",
+        "errorWord": "测试",
+        "originalTextPos": {
+            "from": 135,
+            "to": 144
+        },
+        "severity": "warning",
+        "fixCommand": null,
+        "meta": null,
+        "text": "，我是测试文字一段",
+        "originalHitText": "测试",
+        "notNeedFix": false,
+        "btns": [
+            "confirmed"
+        ],
+        "textPos": {
+            "from": 138,
+            "to": 140
+        },
+        "handleStatus": "todo"
+    }
+]
         return Promise.resolve(result);
       }
     }

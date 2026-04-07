@@ -38,8 +38,9 @@
                       </template>
                     </t-tooltip>
                     <div class="button-group">
-                        <button @click="applySuggestion(suggestion.id)">修复</button>
-                        <button class="destructive" @click="rejectSuggestion(suggestion.id)">忽略</button>
+                        <button v-if="suggestion.btns.includes('accepted')" @click="applySuggestion(suggestion.id)">修复</button>
+                        <button v-if="suggestion.btns.includes('ignored')" class="destructive" @click="rejectSuggestion(suggestion.id)">忽略</button>
+                        <button v-if="suggestion.btns.includes('confirmed')" @click="confirmSuggestion(suggestion.id)">确认</button>
                     </div>
                 </div>
                 <div class="bottom">
@@ -94,6 +95,9 @@ const rejectSuggestion = (suggestionId: string) => {
     props.editor.chain().rejectSuggestion(suggestionId).focus().run()
 }
 
+const confirmSuggestion = (suggestionId: string) => {
+    props.editor.chain().confirmSuggestion(suggestionId).focus().run()
+}
 
 </script>
 <style lang="css">
